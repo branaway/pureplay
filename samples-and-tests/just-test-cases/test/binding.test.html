@@ -1,0 +1,52 @@
+#{selenium 'Just test the simple scenario'}
+
+        open('/databinding/changeLanguage/fr/')
+        open('/databinding/showLocaleDateFormat/24-01-1902/')
+        assertTextPresent('Fri Jan 24 00:00:00 CET 1902')
+        open('/databinding/showLocaleDateFormat?date=24-01-1902')
+        assertTextPresent('Fri Jan 24 00:00:00 CET 1902')
+
+        <!-- No locale is defined for ch, so it uses the default locale date format from application.conf -->
+        open('/databinding/changeLanguage/ch/')
+        open('/databinding/showDefaultLocaleDateFormat/1902-01-24/')
+        assertTextPresent('Fri Jan 24 00:00:00 CET 1902')
+        open('/databinding/showDefaultLocaleDateFormat?date=1902-01-24')
+        assertTextPresent('Fri Jan 24 00:00:00 CET 1902')
+
+        open('/databinding/showDateFormat/01-24-1902T12:01:01/')
+        assertTextPresent('Fri Jan 24 12:01:01 CET 1902')
+        open('/databinding/showDateFormat?date=01-24-1902T12:01:01')
+        assertTextPresent('Fri Jan 24 12:01:01 CET 1902')
+
+        open('/databinding/showList/01/02/04/')
+        assertTextPresent('[01, 02, 04]')
+
+        <!-- Force the locale -->
+        open('/databinding/changeLanguage/en/')
+        open('/databinding/showCalendar/24-Jan-1902/')
+        assertTextPresent('Fri Jan 24 00:00:00 CET 1902')
+        open('/databinding/showCalendar?cal=24-Jan-1902')
+        assertTextPresent('Fri Jan 24 00:00:00 CET 1902')
+
+
+         <!-- As and NoBinding -->
+        open('@{DataBinding.signinPage()}')
+        type('userName', 'x')
+	    type('password', 'x')
+        clickAndWait('submit')
+
+        assertTextPresent('Authentication failed!')
+        assertText('userNameResult', 'x')
+        assertText('passwordResult', 'x')
+        assertText('roleResult', '')
+        
+        type('userName', 'nicolas')
+	    type('password', 'nicolas')
+        clickAndWait('submit')
+
+        assertTextPresent('Authentication successful!')
+        assertText('userNameResult', 'nicolas')
+        assertText('passwordResult', 'nicolas')
+        assertText('roleResult', '')
+
+#{/selenium}	
