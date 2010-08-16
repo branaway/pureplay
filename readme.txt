@@ -1,4 +1,4 @@
-PurePlay - a clone of the Play! Framework with the Groovy part removedm, thus pure Java based. 
+PurePlay - a clone of the Play! Framework with the Groovy part removed, thus pure Java based. 
 
 Objectives:
 
