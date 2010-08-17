@@ -1,6 +1,6 @@
 package controllers
 
-import play._
+import play._;
 import play.mvc._
 
 import se.scalablesolutions.akka.actor._
@@ -42,7 +42,7 @@ class HitCounterActor extends Actor{
     
     def receive = {
         case Increment => counter = counter + 1
-        case GetCount => reply(counter)
+        case GetCount => self.reply(counter)
     }
     
 }

@@ -4,9 +4,10 @@ import play._
 import play.mvc._
 
 import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.stm._
-import se.scalablesolutions.akka.stm.Transaction._
-import se.scalablesolutions.akka.stm.Transaction.Local._
+import se.scalablesolutions.akka.stm
+//import se.scalablesolutions.akka.stm.Transaction._
+//import se.scalablesolutions.akka.stm.Transaction.Local._
+import se.scalablesolutions.akka.stm.local._
 
 
 /**
@@ -19,7 +20,7 @@ import se.scalablesolutions.akka.stm.Transaction.Local._
 object HitCounter extends Controller {
     
     //the hit counter using STM
-    val ref = TransactionalRef[Int]
+    val ref = Ref[Int](0);
     
     //hit counter that does not use STM
     var dumbCount = 0
@@ -30,7 +31,7 @@ object HitCounter extends Controller {
         
         //transaction wrapped around our STM hit counter
         val count = atomic{
-            val i = ref.get.getOrElse(0) + 1
+            val i = ref.get + 1
             ref.swap(i)
             i
         }

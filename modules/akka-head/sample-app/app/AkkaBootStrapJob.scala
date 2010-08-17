@@ -1,7 +1,6 @@
 import play._
 import play.jobs._
 import play.test._
-
 import controllers.{Increment,GetCount}
 import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.Actor._
@@ -52,7 +51,7 @@ class ClusterHitCounterActor extends Actor{
     //the case objects, Increment and GetCount, are defined in ClusterHitCounter.scala
     def receive = {
         case Increment => count = count + 1
-        case GetCount => reply(count)
+        case GetCount => self.reply(count)
     }
     
 }

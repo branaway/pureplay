@@ -1,0 +1,35 @@
+INF [20100816-17:53:15.102] config: Config loaded from the application classpath.
+INF [20100816-17:53:15.107] remote: Starting remote server at [localhost:9999]
+DEB [20100816-17:53:15.168] dispatch: Starting ExecutorBasedEventDrivenDispatcher [event-driven:executor:dispatcher:global]
+DEB [20100816-17:53:15.169] dispatch: Throughput for event-driven:executor:dispatcher:global = 5
+DEB [20100816-17:53:15.169] actor: [Actor[ClusterHitCounterActor:1282036281225]] has started
+INF [20100816-17:53:15.380] remote: Registering server side remote actor [ClusterHitCounterActor] with id [cluster-hit-counter]
+DEB [20100816-17:55:55.663] actor: [Actor[ClusterHitCounterActor:1282036441739]] has started
+INF [20100816-17:55:55.664] remote: Registering server side remote actor [ClusterHitCounterActor] with id [cluster-hit-counter]
+INF [20100816-17:56:00.145] api: Initializing GlobalStmInstance using factoryMethod 'org.multiverse.stms.alpha.AlphaStm.createFast'.
+INF [20100816-17:56:00.162] alpha: Created a new AlphaStm instance
+INF [20100816-17:56:00.163] api: Successfully initialized GlobalStmInstance using factoryMethod 'org.multiverse.stms.alpha.AlphaStm.createFast'.
+DEB [20100816-17:57:06.869] actor: [Actor[ClusterHitCounterActor:1282036512946]] has started
+INF [20100816-17:57:06.870] remote: Registering server side remote actor [ClusterHitCounterActor] with id [cluster-hit-counter]
+DEB [20100816-17:57:09.344] actor: [Actor[controllers.HitCounterActor:1282036515423]] has started
+DEB [20100816-17:57:09.356] dispatch: Created event-driven:executor:dispatcher:global-1
+DEB [20100816-17:57:09.359] dispatch: Created event-driven:executor:dispatcher:global-2
+DEB [20100816-17:57:11.174] dispatch: Created event-driven:executor:dispatcher:global-3
+DEB [20100816-17:57:11.174] dispatch: Created event-driven:executor:dispatcher:global-4
+DEB [20100816-17:57:12.369] dispatch: Created event-driven:executor:dispatcher:global-6
+DEB [20100816-17:57:12.369] dispatch: Created event-driven:executor:dispatcher:global-5
+DEB [20100816-17:57:12.938] dispatch: Created event-driven:executor:dispatcher:global-7
+DEB [20100816-17:57:12.938] dispatch: Created event-driven:executor:dispatcher:global-8
+DEB [20100816-17:57:13.899] dispatch: Created event-driven:executor:dispatcher:global-10
+DEB [20100816-17:57:13.900] dispatch: Created event-driven:executor:dispatcher:global-9
+DEB [20100816-17:57:14.601] dispatch: Created event-driven:executor:dispatcher:global-11
+DEB [20100816-17:57:14.601] dispatch: Created event-driven:executor:dispatcher:global-12
+INF [20100817-13:11:25.302] api: Initializing GlobalStmInstance using factoryMethod 'org.multiverse.stms.alpha.AlphaStm.createFast'.
+INF [20100817-13:11:25.319] alpha: Created a new AlphaStm instance
+INF [20100817-13:11:25.320] api: Successfully initialized GlobalStmInstance using factoryMethod 'org.multiverse.stms.alpha.AlphaStm.createFast'.
+INF [20100817-13:35:37.198] api: Initializing GlobalStmInstance using factoryMethod 'org.multiverse.stms.alpha.AlphaStm.createFast'.
+INF [20100817-13:35:37.215] alpha: Created a new AlphaStm instance
+INF [20100817-13:35:37.216] api: Successfully initialized GlobalStmInstance using factoryMethod 'org.multiverse.stms.alpha.AlphaStm.createFast'.
+INF [20100817-13:38:51.659] api: Initializing GlobalStmInstance using factoryMethod 'org.multiverse.stms.alpha.AlphaStm.createFast'.
+INF [20100817-13:38:51.677] alpha: Created a new AlphaStm instance
+INF [20100817-13:38:51.678] api: Successfully initialized GlobalStmInstance using factoryMethod 'org.multiverse.stms.alpha.AlphaStm.createFast'.
