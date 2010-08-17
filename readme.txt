@@ -22,5 +22,8 @@ PurePlay is based off the Play! 1.1 bazaar repository and is synchronized with i
 History:
 
 2010.8.16, version 1.1
-- initial checkin to github
+	- initial checkin to github
+2010.8.17, version 1.1
+	- updated the akka module, scala module and added java sample controllers to the akka smaple app.
+
 
