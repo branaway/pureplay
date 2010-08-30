@@ -14,6 +14,7 @@
 package cn.bran.japid.compiler;
 
 import java.io.File;
+
 import java.util.List;
 import java.util.Stack;
 
@@ -21,7 +22,6 @@ import cn.bran.japid.classmeta.AbstractTemplateClassMetaData;
 import cn.bran.japid.template.ActionRunner;
 import cn.bran.japid.template.JapidTemplate;
 import cn.bran.japid.template.RenderResult;
-import cn.bran.play.JapidResult;
 
 /**
  * based on the original code from the Play! Frameowrk
@@ -290,6 +290,10 @@ public abstract class JapidAbstractCompiler {
 					args = "\"\"";
 				String logLine = "System.out.println(\"" + this.template.name.replace('\\', '/') + "(line " + (parser.getLine() + i) + "): \" + " + args + ");";
 				println(logLine);
+			} else if (line.startsWith("suppressNull ") || line.startsWith("suppressNull\t")) {
+				String npe = line.substring("suppressNull".length()).trim().replace(";", "").replace("'", "").replace("\"", "");
+				if ("on".equals(npe))
+					getTemplateClassMetaData().suppressNull();
 			} else {
 				print(line);
 				markLine(parser.getLine() + i);
@@ -300,10 +304,11 @@ public abstract class JapidAbstractCompiler {
 	}
 
 	protected void expr() {
-		// TODO: make difference of safe expression and raw expression
-		// safe expressions are wrapped in try/catch
 		String expr = parser.getToken().trim();
-		print("p(" + expr + ");");
+		if (getTemplateClassMetaData().suppressNull)
+			print("try { p(" + expr + "); } catch (NullPointerException npe) {}");
+		else
+			print("p(" + expr + ");");
 		markLine(parser.getLine());
 		println();
 	}
@@ -453,29 +458,32 @@ public abstract class JapidAbstractCompiler {
 	 */
 	protected static String createActionRunner(String actionInvocationWithCache) {
 		List<String> params = new TagArgsParser(actionInvocationWithCache).split();
-		if (params.size() == 1)
-			return(createActionRunner(actionInvocationWithCache, null, null, null));
-		else {
-			String action = params.get(0);
-			// remove the argument part to extract action string as key base
-			int left = action.indexOf('(');
-			if (left < 1) {
-				throw new RuntimeException("invoke: action needs pair of ()");
-			}
-			
-			String actionPath = "\"" + action.substring(0, left) + "\""; 
-			if (params.size() == 2) {
-				// no param, use the action string as the key
-				return (createActionRunner(action, params.get(1), actionPath, ""));
-			} else {
-				String args = "";
+		String action = params.get(0);
+		// remove the argument part to extract action string as key base
+		int left = action.indexOf('(');
+		if (left < 1) {
+			throw new RuntimeException("invoke: action needs pair of ()");
+		}
+		int right = action.lastIndexOf(')');
+		String actionPath = "\"" + action.substring(0, left) + "\""; 
+		String args = action.substring(left + 1, right).trim();
+		String ttl = "\"\"";
+
+		if (params.size() >= 2) {
+			ttl = params.get(1);
+			if (params.size() > 2) {
 				for (int i = 2; i < params.size(); i++) {
-					args += params.get(i) + ",";
+					args += ","  + params.get(i);
 				}
-				args = args.substring(0, args.length() - 1);
-				return (createActionRunner(action, params.get(1), actionPath, args));
+
+				if (args.startsWith(",")) 
+					args = args.substring(1);
+				
+				if (args.endsWith(","))
+					args = args.substring(0, args.length() - 1);
 			}
 		}
+		return (createActionRunner(action, ttl, actionPath, args));
 	}
 
 	protected void printActionInvocation(String action) {

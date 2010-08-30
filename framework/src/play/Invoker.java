@@ -2,18 +2,24 @@ package play;
 
 import com.jamonapi.Monitor;
 import com.jamonapi.MonitorFactory;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
-
 import java.util.concurrent.TimeUnit;
+
 import play.Play.Mode;
 import play.classloading.enhancers.LocalvariablesNamesEnhancer.LocalVariablesNamesTracer;
 import play.exceptions.PlayException;
 import play.exceptions.UnexpectedException;
+
+import com.jamonapi.Monitor;
+import com.jamonapi.MonitorFactory;
 
 /**
  * Run some code in a Play! context
@@ -61,8 +67,8 @@ public class Invoker {
                 retry = false;
             } else {
                 try {
-                    if (invocation.retry.task != null) {
-                        invocation.retry.task.get();
+                    if (invocation.retry.tasks != null) {
+                        for(Future<?> f : invocation.retry.tasks) f.get();
                     } else {
                         Thread.sleep(invocation.retry.timeout);
                     }
@@ -147,8 +153,8 @@ public class Invoker {
          * @param suspendRequest
          */
         public void suspend(Suspend suspendRequest) {
-            if (suspendRequest.task != null) {
-                WaitForTasksCompletion.waitFor(suspendRequest.task, this);
+            if (suspendRequest.tasks != null) {
+                WaitForTasksCompletion.waitFor(suspendRequest.tasks, this);
             } else {
                 Invoker.invoke(this, suspendRequest.timeout);
             }
@@ -211,6 +217,7 @@ public class Invoker {
      */
     static {
         int core = Integer.parseInt(Play.configuration.getProperty("play.pool", Play.mode == Mode.DEV ? "1" : ((Runtime.getRuntime().availableProcessors()+1) + "")));
+        System.out.println("Number of threads to run actions: " + core);
         executor = new ScheduledThreadPoolExecutor(core, new ThreadPoolExecutor.AbortPolicy());
     }
 
@@ -227,14 +234,14 @@ public class Invoker {
         /**
          * Wait for task execution.
          */
-        Future<?> task;
+        List<Future<?>> tasks;
 
         public Suspend(long timeout) {
             this.timeout = timeout;
         }
 
-        public Suspend(Future<?> task) {
-            this.task = task;
+        public Suspend(Future<?>... tasks) {
+            this.tasks = Arrays.asList(tasks);
         }
 
         @Override
@@ -244,8 +251,8 @@ public class Invoker {
 
         @Override
         public String getErrorDescription() {
-            if (task != null) {
-                return "Wait for " + task;
+            if (tasks != null) {
+                return "Wait for " + tasks;
             }
             return "Retry in " + timeout + " ms.";
         }
@@ -253,24 +260,36 @@ public class Invoker {
 
     /**
      * Utility that track tasks completion in order to resume suspended requests.
+     * 
+     * XXX bran: There might be threading issue with this class!
+     * 
      */
     static class WaitForTasksCompletion extends Thread {
 
-        Map<Future<?>, Invocation> queue;
+        Map<List<Future<?>>, Invocation> queue;
         static WaitForTasksCompletion instance;
 
         public WaitForTasksCompletion() {
-            queue = new HashMap<Future<?>, Invocation>();
+            queue = new ConcurrentHashMap<List<Future<?>>, Invocation>();
             setName("WaitForTasksCompletion");
             setDaemon(true);
             start();
         }
 
-        public static void waitFor(Future<?> task, Invocation invocation) {
+//        public static void waitFor(Future<?> task, Invocation invocation) {
+//            init();
+//            instance.queue.put(task, invocation);
+//        }
+//
+		private synchronized static void init() {
             if (instance == null) {
                 instance = new WaitForTasksCompletion();
             }
-            instance.queue.put(task, invocation);
+		}
+		
+		public static void waitFor(List<Future<?>> tasks, Invocation invocation) {
+        	init();
+        	instance.queue.put(tasks, invocation);
         }
 
         @Override
@@ -278,14 +297,20 @@ public class Invoker {
             while (true) {
                 try {
                     if (!queue.isEmpty()) {
-                        for (Future<?> task : new HashSet<Future<?>>(queue.keySet())) {
-                            if (task.isDone()) {
-                                executor.submit(queue.get(task));
-                                queue.remove(task);
+                        for (List<Future<?>> tasks : new HashSet<List<Future<?>>>(queue.keySet())) {
+                            boolean allDone = true;
+                            for(Future<?> f : tasks) {
+                                if(!f.isDone()) {
+                                    allDone = false;
+                                }
+                            }
+                            if (allDone) {
+                                executor.submit(queue.get(tasks));
+                                queue.remove(tasks);
                             }
                         }
                     }
-                    Thread.sleep(100);
+                    Thread.sleep(50);
                 } catch (InterruptedException ex) {
                     Logger.warn(ex, "");
                 }

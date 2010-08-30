@@ -168,9 +168,9 @@ public class ActionInvoker {
 
                 Result actionResult = null;
                 String cacheKey = "actioncache:" + request.action + ":" + request.querystring;
-
                 // Check the cache (only for GET or HEAD)
-                if ((request.method.equals("GET") || request.method.equals("HEAD")) && actionMethod.isAnnotationPresent(CacheFor.class)) {
+                boolean cacheFor = (request.method.equals("GET") || request.method.equals("HEAD")) && actionMethod.isAnnotationPresent(CacheFor.class);
+				if (cacheFor) {
                     actionResult = (Result) play.cache.Cache.get(cacheKey);
                 }
 
@@ -186,7 +186,7 @@ public class ActionInvoker {
                             actionResult = (Result) ex.getTargetException();
 
                             // Cache it if needed
-                            if ((request.method.equals("GET") || request.method.equals("HEAD")) && actionMethod.isAnnotationPresent(CacheFor.class)) {
+                            if (cacheFor) {
                                 play.cache.Cache.set(cacheKey, actionResult, actionMethod.getAnnotation(CacheFor.class).value());
                             }
 
@@ -225,8 +225,8 @@ public class ActionInvoker {
                 // @After
                 List<Method> afters = Java.findAllAnnotatedMethods(Controller.getControllerClass(), After.class);
                 Collections.sort(afters, new Comparator<Method>() {
-
-                    public int compare(Method m1, Method m2) {
+                    @Override
+					public int compare(Method m1, Method m2) {
                         After after1 = m1.getAnnotation(After.class);
                         After after2 = m2.getAnnotation(After.class);
                         return after1.priority() - after2.priority();
@@ -468,14 +468,14 @@ public class ActionInvoker {
         Object[] rArgs = new Object[method.getParameterTypes().length];
         for (int i = 0; i < method.getParameterTypes().length; i++) {
 
-            Class type = method.getParameterTypes()[i];
+            Class<?> type = method.getParameterTypes()[i];
             Map<String, String[]> params = new HashMap<String, String[]>();
             if (type.equals(String.class) || Number.class.isAssignableFrom(type) || type.isPrimitive()) {
                 params.put(paramsNames[i], Scope.Params.current().getAll(paramsNames[i]));
             } else {
                 params.putAll(Scope.Params.current().all());
             }
-            Logger.trace("getActionMethodArgs name [" + paramsNames[i] + "] annotation [" + Utils.toString(method.getParameterAnnotations()[i]) + "]");
+            Logger.trace("getActionMethodArgs name [" + paramsNames[i] + "] annotation [" + Utils.join(method.getParameterAnnotations()[i], " ") + "]");
 
             rArgs[i] = Binder.bind(paramsNames[i], method.getParameterTypes()[i], method.getGenericParameterTypes()[i], method.getParameterAnnotations()[i], params, o, method, i + 1);
         }

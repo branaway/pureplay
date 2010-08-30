@@ -38,7 +38,6 @@
 	<classpathentry kind="lib" path="framework/lib/jta-1.1.jar"/>
 	<classpathentry kind="lib" path="framework/lib/junit-4.8.1.jar"/>
 	<classpathentry kind="lib" path="framework/lib/log4j-1.2.15.jar"/>
-	<classpathentry kind="lib" path="framework/lib/memcached-2.4.2.jar"/>
 	<classpathentry kind="lib" path="framework/lib/mysql-connector-java-5.1.8.jar"/>
 	<classpathentry kind="lib" path="framework/lib/netty-3.2.1.Final.jar"/>
 	<classpathentry kind="lib" path="framework/lib/org.eclipse.jdt.core_3.6.0.v_A56.jar"/>
@@ -49,5 +48,6 @@
 	<classpathentry kind="lib" path="framework/lib/snakeyaml-1.6.jar"/>
 	<classpathentry kind="lib" path="modules/netty-1.0.2/lib/netty-3.1.5.GA.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="framework/lib/memcached-2.5.jar"/>
 	<classpathentry kind="output" path="eclipse-classes"/>
 </classpath>

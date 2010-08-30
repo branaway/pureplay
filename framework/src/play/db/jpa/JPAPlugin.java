@@ -61,7 +61,7 @@ public class JPAPlugin extends PlayPlugin {
                 String id = params.get(idKey)[0];
                 try {
                     Query query = JPA.em().createQuery("from " + clazz.getName() + " o where o." + keyName + " = ?");
-                    query.setParameter(1, play.data.binding.Binder.directBind(annotations, id + "", Model.Manager.factoryFor(clazz).keyType()));
+                    query.setParameter(1, play.data.binding.Binder.directBind(name, annotations, id + "", Model.Manager.factoryFor(clazz).keyType()));
                     Object o = query.getSingleResult();
                     return GenericModel.edit(o, name, params, annotations);
                 } catch (Exception e) {
@@ -493,9 +493,9 @@ public class JPAPlugin extends PlayPlugin {
                     c = c.getSuperclass();
                 }
             } catch (Exception e) {
-                throw new UnexpectedException("Error while determining the object @Id for an object of type " + c);
+                throw new UnexpectedException("Error while determining the object @Id for an object of type " + clazz);
             }
-            return null;
+            throw new UnexpectedException("Cannot get the object @Id for an object of type " + clazz);
         }
 
         String getSearchQuery(List<String> searchFields) {

@@ -25,5 +25,7 @@ History:
 	- initial checkin to github
 2010.8.17, version 1.1
 	- updated the akka module, scala module and added java sample controllers to the akka smaple app.
-
+2010/8/23:
+	1. changed the UrlEncodedParser to use "_body" as the key in the params to store the full body text, to avoid possible collision with forms.
+	2. added synchronization to the instance initialization of WaitForTasksCompletion in Invoker
 

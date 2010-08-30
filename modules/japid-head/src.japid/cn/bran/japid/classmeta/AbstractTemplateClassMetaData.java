@@ -49,6 +49,8 @@ public class AbstractTemplateClassMetaData {
 	public static boolean streaming = false;
 	// if we need to track the time to render
 	boolean stopWatch = false;
+	// control whether to allow safe expression navigation
+	public boolean suppressNull = false;
 
 	public String getOriginalTemplate() {
 		return originalTemplate;
@@ -347,6 +349,14 @@ public class AbstractTemplateClassMetaData {
 		this.stopWatch = true;
 	}
 
+	/**
+	 * suppress all NPE in expression ${} and display empty string 
+	 */
+	public void suppressNull() {
+		this.suppressNull = true;
+	}
+	
+	
 	public void addStaticImports(String im) {
 		staticImports.add(im);
 	}
@@ -406,5 +416,21 @@ public class AbstractTemplateClassMetaData {
 			pln("return sb.toString();");
 			pln("}");
 		}
+	}
+
+	/**
+	 * added variable declarations such as request, response, errors, flash, etc.
+	 */
+	protected void addImplicitVariables() {
+		pln("\r\n		play.mvc.Http.Request request = play.mvc.Http.Request.current(); assert request != null;\r\n" + 
+				"		play.mvc.Http.Response response = play.mvc.Http.Response.current(); assert response != null;\r\n" + 
+				"		play.mvc.Scope.Flash flash = play.mvc.Scope.Flash.current();assert flash != null;\r\n" + 
+				"		play.mvc.Scope.Session session = play.mvc.Scope.Session.current();assert session != null;\r\n" + 
+				"		play.mvc.Scope.RenderArgs renderArgs = play.mvc.Scope.RenderArgs.current(); assert renderArgs != null;\r\n" + 
+				"		play.mvc.Scope.Params params = play.mvc.Scope.Params.current();assert params != null;\r\n" + 
+				"		play.data.validation.Validation validation = play.data.validation.Validation.current();assert validation!= null;\r\n" + 
+				"		cn.bran.play.FieldErrors errors = new cn.bran.play.FieldErrors(validation.errors());assert errors != null;\r\n" + 
+				"		play.Play _play = new play.Play(); assert _play != null;" + 
+				"");
 	}
 }

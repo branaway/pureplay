@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Yet Another Blog Engine</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>ch.epfl.lamp.sdt.core.scalabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>ch.epfl.lamp.sdt.core.scalanature</nature>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>org.playframework.playclipse.playNature</nature>
+	</natures>
+	<linkedResources><link><name>scala-0.7.3</name><type>2</type><location>D:/projects/pureplay1.1/modules/scala-0.7.3/app</location></link>
+<link><name>crud</name><type>2</type><location>D:/home/bran/projects/play/modules/crud/app</location></link>
+</linkedResources>
+</projectDescription>

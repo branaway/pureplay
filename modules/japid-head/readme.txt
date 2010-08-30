@@ -6,6 +6,16 @@
                    
 Version History:
 
+2010/8/28:	V0.5.2
+			1. made Play's CacheFor annotation on outer action works with JapidResult, including #{invoke } tag in the templates. The content extraction in JapidResult is postponed until the apply() stage. The invoke tag can invoke actions with CacheFor as well and the cache TTL is respected. 
+			The CacheFor will replace the old verbose way of setting up cache control in controller and TTL spec in the invoke tag.  
+2010/8/8:	V0.5.1
+			1. imported play.mvc.Http.* in generated java files from templates, which means one can reference Request, Response etc. 
+			2. added some implicit objects such as "request", "flash", "session". See the ImplicitObjects.html for examples.  
+			3. added "_play" implicit object, so named to avoid conflict with play package name.
+			4. added "suppressNull", a directive to allow safe navigation in expression, default off 
+				e.g. ` suppressNull on
+			5. added a property in application.conf that directs the plugin to dump a request in the system console for debugging. The property is named as japid.dump.request, which can take "yes|no|regex". The default is "no". See the application.conf and the Application.dumpPost() in the japid sample application for an example.  
 2010/8/8:	V0.5
 			1. moved all samples to the JapidSample sub directory, which was a sample Play application to demo Japid features.
 			2. added renderJapidWith() in the JapidController which can be used to render a designated template with parameters.
