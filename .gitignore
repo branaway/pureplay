@@ -2,3 +2,5 @@ framework/classes/*
 eclipse-classes
 *.class
 modules/netty-1.0.2/
+.bzr
+synchr710.sh
