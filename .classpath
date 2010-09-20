@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="framework/src"/>
+	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="lib" path="framework/lib/activation-1.1.1.jar"/>
 	<classpathentry kind="lib" path="framework/lib/antlr-2.7.6.jar"/>
 	<classpathentry kind="lib" path="framework/lib/async-http-client-1.0.0-SNAPSHOT-shaded.jar"/>
@@ -49,5 +50,7 @@
 	<classpathentry kind="lib" path="modules/netty-1.0.2/lib/netty-3.1.5.GA.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="framework/lib/memcached-2.5.jar"/>
+	<classpathentry kind="lib" path="framework/lib/jpathwatch-0-93-rc1.jar"/>
+	<classpathentry kind="lib" path="framework/lib/PlayAgent.jar"/>
 	<classpathentry kind="output" path="eclipse-classes"/>
 </classpath>
