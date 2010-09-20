@@ -13,7 +13,8 @@ import org.junit.runner.Description;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
-import play.Invoker.Invocation;
+
+import play.Invocation;
 import play.Play;
 import play.Logger;
 import play.PlayPlugin;

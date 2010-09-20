@@ -1,6 +1,8 @@
 package play.server;
 
 import org.apache.commons.lang.StringUtils;
+
+import play.DirectInvocation;
 import play.Invoker;
 import play.Logger;
 import play.Play;
@@ -443,7 +445,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
         is.close();
     }
 
-    public class ServletInvocation extends Invoker.DirectInvocation {
+    public class ServletInvocation extends DirectInvocation {
 
         private Request request;
         private Response response;

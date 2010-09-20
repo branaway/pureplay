@@ -224,7 +224,11 @@ public class Scope {
             if (key.contains(":")) {
                 throw new IllegalArgumentException("Character ':' is invalid in a session key.");
             }
-            data.put(key, value);
+            if(value == null) {
+                data.remove(key);
+            } else {
+                data.put(key, value);
+            }
         }
 
         public void put(String key, Object value) {
@@ -478,4 +482,32 @@ public class Scope {
         }
 
     }
+
+    /**
+     * Routes args (used in reserve routing)
+     */
+    public static class RouteArgs {
+
+        public Map<String, Object> data = new HashMap<String, Object>();        // ThreadLocal access
+        public static ThreadLocal<RouteArgs> current = new ThreadLocal<RouteArgs>();
+
+        public static RouteArgs current() {
+            return current.get();
+        }
+
+        public void put(String key, Object arg) {
+            this.data.put(key, arg);
+        }
+
+        public Object get(String key) {
+            return data.get(key);
+        }
+
+        @Override
+        public String toString() {
+            return data.toString();
+        }
+
+    }
+
 }

@@ -28,7 +28,8 @@ public class EhCacheImpl implements CacheImpl {
     CacheManager cacheManager;
     net.sf.ehcache.Cache cache;
 
-    public void add(String key, Object value, int expiration) {
+    @Override
+	public void add(String key, Object value, int expiration) {
         if (cache.get(key) != null) {
             return;
         }
@@ -37,11 +38,13 @@ public class EhCacheImpl implements CacheImpl {
         cache.put(element);
     }
 
-    public void clear() {
+    @Override
+	public void clear() {
         cache.removeAll();
     }
 
-    public synchronized long decr(String key, int by) {
+    @Override
+	public synchronized long decr(String key, int by) {
         Element e = cache.get(key);
         if (e == null) {
             return -1;
@@ -52,16 +55,19 @@ public class EhCacheImpl implements CacheImpl {
         return newValue;
     }
 
-    public void delete(String key) {
+    @Override
+	public void delete(String key) {
         cache.remove(key);
     }
 
-    public Object get(String key) {
+    @Override
+	public Object get(String key) {
         Element e = cache.get(key);
         return (e == null) ? null : e.getValue();
     }
 
-    public Map<String, Object> get(String[] keys) {
+    @Override
+	public Map<String, Object> get(String[] keys) {
         Map<String, Object> result = new HashMap<String, Object>();
         for (String key : keys) {
             result.put(key, get(key));
@@ -69,7 +75,8 @@ public class EhCacheImpl implements CacheImpl {
         return result;
     }
 
-    public long incr(String key, int by) {
+    @Override
+	public synchronized long incr(String key, int by) {
         Element e = cache.get(key);
         if (e == null) {
             return -1;
@@ -81,7 +88,8 @@ public class EhCacheImpl implements CacheImpl {
 
     }
 
-    public void replace(String key, Object value, int expiration) {
+    @Override
+	public synchronized void replace(String key, Object value, int expiration) {
         if (cache.get(key) == null) {
             return;
         }
@@ -90,7 +98,8 @@ public class EhCacheImpl implements CacheImpl {
         cache.put(element);
     }
 
-    public boolean safeAdd(String key, Object value, int expiration) {
+    @Override
+	public boolean safeAdd(String key, Object value, int expiration) {
         try {
             add(key, value, expiration);
             return true;
@@ -99,7 +108,8 @@ public class EhCacheImpl implements CacheImpl {
         }
     }
 
-    public boolean safeDelete(String key) {
+    @Override
+	public boolean safeDelete(String key) {
         try {
             delete(key);
             return true;
@@ -109,7 +119,8 @@ public class EhCacheImpl implements CacheImpl {
         }
     }
 
-    public boolean safeReplace(String key, Object value, int expiration) {
+    @Override
+	public boolean safeReplace(String key, Object value, int expiration) {
         try {
             replace(key, value, expiration);
             return true;
@@ -119,7 +130,8 @@ public class EhCacheImpl implements CacheImpl {
         }
     }
 
-    public boolean safeSet(String key, Object value, int expiration) {
+    @Override
+	public boolean safeSet(String key, Object value, int expiration) {
         try {
             set(key, value, expiration);
             return true;
@@ -129,13 +141,15 @@ public class EhCacheImpl implements CacheImpl {
         }
     }
 
-    public void set(String key, Object value, int expiration) {
+    @Override
+	public void set(String key, Object value, int expiration) {
         Element element = new Element(key, value);
         element.setTimeToLive(expiration);
         cache.put(element);
     }
 
-    public void stop() {
+    @Override
+	public void stop() {
         cache.removeAll();
     }
 }

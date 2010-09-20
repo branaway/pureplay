@@ -6,8 +6,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import play.Invocation;
 import play.Play;
-import play.Invoker;
 import play.Logger;
 import play.exceptions.JavaExecutionException;
 import play.exceptions.PlayException;
@@ -17,7 +18,7 @@ import play.libs.Time;
  * A job is an asynchronously executed unit of work
  * @param <V> The job result type (if any)
  */
-public class Job<V> extends Invoker.Invocation implements Callable<V> {
+public class Job<V> extends Invocation implements Callable<V> {
 
     protected ExecutorService executor;
     protected long lastRun = 0;

@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import org.w3c.dom.Document;
-import play.Invoker.Suspend;
 import play.Logger;
 import play.Play;
+import play.Suspend;
 import play.classloading.enhancers.ControllersEnhancer.ControllerInstrumentation;
 import play.classloading.enhancers.ControllersEnhancer.ControllerSupport;
 import play.classloading.enhancers.LocalvariablesNamesEnhancer.LocalVariablesNamesTracer;
@@ -121,6 +121,15 @@ public class Controller implements ControllerSupport, LocalVariablesSupport {
      * ie : controller.renderArgs - controller.renderArgs.current()
      */
     protected static Scope.RenderArgs renderArgs = null;
+    /**
+     * The current routeArgs scope: This is a hash map that is accessible during the reverse routing phase.
+     * Any variable added to this scope will be used for reverse routing. Useful when you have a param that you want
+     * to add to any route without add it expicitely to every action method.
+     *
+     * Note: The ControllersEnhancer makes sure that an appropriate thread local version is applied.
+     * ie : controller.routeArgs - controller.routeArgs.current()
+     */
+    protected static Scope.RouteArgs routeArgs = null;
     /**
      * The current Validation object. It allows you to validate objects and to retrieve potential validations errors for those objects.
      *
@@ -526,6 +535,8 @@ public class Controller implements ControllerSupport, LocalVariablesSupport {
         }
     }
 
+// bran: I commented out all the render methods that depends on the Groovy templating system.
+        
 //    /**
 //     * Render a specific template
 //     * @param templateName The template name

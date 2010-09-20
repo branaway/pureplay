@@ -34,7 +34,16 @@ public class Play {
      */
     public enum Mode {
 
-        DEV, PROD
+        DEV, PROD;
+
+        public boolean isDev() {
+            return this == DEV;
+        }
+
+        public boolean isProd() {
+            return this == PROD;
+        }
+        
     }
 
     /**
@@ -520,7 +529,7 @@ public class Play {
      */
     public static void loadPlugins() {
         Logger.trace("Loading plugins");
-        // Play! plugings
+        // Play! plugins
         Enumeration<URL> urls = null;
         try {
             urls = Play.classloader.getResources("play.plugins");

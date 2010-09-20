@@ -11,7 +11,8 @@ import static org.jboss.netty.channel.Channels.pipeline;
 
 public class HttpServerPipelineFactory implements ChannelPipelineFactory {
 
-    public ChannelPipeline getPipeline() throws Exception {
+    @Override
+	public ChannelPipeline getPipeline() throws Exception {
 
         Integer max = Integer.valueOf(Play.configuration.getProperty("play.netty.maxContentLength", "-1"));
            
