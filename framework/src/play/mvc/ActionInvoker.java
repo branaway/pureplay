@@ -11,7 +11,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import play.Logger;
 import play.Play;
@@ -27,7 +26,6 @@ import play.exceptions.JavaExecutionException;
 import play.exceptions.PlayException;
 import play.exceptions.UnexpectedException;
 import play.i18n.Lang;
-import play.mvc.Router.Route;
 import play.mvc.results.NoResult;
 import play.mvc.results.NotFound;
 import play.mvc.results.Result;
@@ -45,8 +43,14 @@ public class ActionInvoker {
 //    private static final String CONTROLLERS_SYNTH_CLASS = "^controllers\\..*\\$class$";
 //    private static final Pattern controllerSynthClassPattern = Pattern.compile(CONTROLLERS_SYNTH_CLASS);
     
+//	static StaticActionInvoker staticActionInvoker;
+//	static {
+//		
+//	}
+	
     @SuppressWarnings("unchecked")
     public static void invoke(Http.Request request, Http.Response response) {
+    	
         Monitor monitor = null;
         try {
             if (!Play.started) {
@@ -365,7 +369,6 @@ public class ActionInvoker {
                     throw new UnexpectedException("Exception while doing @Finally", e);
                 }
             }
-
         } catch (PlayException e) {
             throw e;
         } catch (Exception e) {
@@ -437,6 +440,11 @@ public class ActionInvoker {
 
     }
 
+    /**
+     * 
+     * @param fullAction
+     * @return [controller class, action method]
+     */
     public static Object[] getActionMethod(String fullAction) {
         Method actionMethod = null;
         Class controllerClass = null;

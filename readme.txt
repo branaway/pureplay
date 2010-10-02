@@ -21,6 +21,14 @@ PurePlay is based off the Play! 1.1 bazaar repository and is synchronized with i
 
 History:
 
+2010.10.2, version 1.2alpha
+
+- experiment implementation of Fast Play: 
+-- run NettyInvocation directly from the PlayHandler to circumvent the Invoker layer, 20-30% performance gain.
+-- Special plugin StaticRouterPlugin that creates a Java class that tranlates the routing rules
+in the routes files to statically linked controller action calls. The removal of the reflection based action
+invocation yields 50%+ performance gain in the low level HTTP processing cycle.   
+-  removed the HTTP1.1 only keep-alive constraint. HTTP1.0 Connection: keep-alive was added.
 2010.8.16, version 1.1
 	- initial checkin to github
 2010.8.17, version 1.1

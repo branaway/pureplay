@@ -6,3 +6,4 @@
 5:play.i18n.MessagesPlugin
 6:play.libs.WS
 7:play.jobs.JobsPlugin
+10:bran.plugins.StaticRouterPlugin

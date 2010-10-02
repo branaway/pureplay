@@ -84,7 +84,13 @@ public class JPAPlugin extends PlayPlugin {
 
     @Override
     public void onApplicationStart() {
-        if (JPA.entityManagerFactory == null) {
+    	String dbprop = Play.configuration.getProperty("db");
+    	if (dbprop == null) {
+    		System.out.println("no db configured");
+    		return;
+    	}
+    	
+    	if (JPA.entityManagerFactory == null) {
             List<Class> classes = Play.classloader.getAnnotatedClasses(Entity.class);
             if (classes.isEmpty() && Play.configuration.getProperty("jpa.entities", "").equals("")) {
                 return;

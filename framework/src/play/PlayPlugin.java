@@ -5,13 +5,17 @@ import com.google.gson.JsonObject;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.db.Model;
 import play.mvc.Http.Request;
 import play.mvc.Http.Response;
-import play.mvc.Router.Route;
+import play.mvc.Route;
 import play.mvc.results.Result;
 import play.templates.Template;
 import play.test.BaseTest;
@@ -252,4 +256,18 @@ public abstract class PlayPlugin implements Comparable<PlayPlugin> {
     public int compareTo(PlayPlugin o) {
         return (index < o.index ? -1 : (index == o.index ? 0 : 1));
     }
+
+	public void onClassesRemoved(ApplicationClass c) {
+	}
+
+
+	/**
+	 * 
+	 * @param applicationClasses
+	 * @return
+	 * @author bran
+	 */
+	public Collection<? extends ApplicationClass> onNewlyCompiled(Set<ApplicationClass> applicationClasses) {
+		return Collections.emptyList();
+	}
 }

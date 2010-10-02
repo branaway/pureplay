@@ -28,10 +28,19 @@ public abstract class Invocation implements Runnable {
      */
     public boolean init() {
         Thread.currentThread().setContextClassLoader(Play.classloader);
+//        if (Play.detectChanges()) {
+//        	System.out.println("redo detection");
+//        	Play.doDetect();
+//        }
         Play.detectChanges();
+        
+//        System.out.println("detection done");
+        
         if (!Play.started) {
-            if (Play.mode == Mode.PROD) {
-                throw new UnexpectedException("Application is not started");
+        	String message = "Application is not started";
+        	System.out.println(message);
+        	if (Play.mode == Mode.PROD) {
+				throw new UnexpectedException(message);
             }
             Play.start();
         }
@@ -106,7 +115,7 @@ public abstract class Invocation implements Runnable {
         }
         try {
             if (init()) {
-                before();
+                before(); // jpa things goes in before. cannot be opted out. 
                 execute();
                 after();
             }

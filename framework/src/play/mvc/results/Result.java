@@ -6,8 +6,9 @@ import play.mvc.Http;
  * Result support
  */
 public abstract class Result extends RuntimeException {
-    
-    public Result() {
+    private static final long serialVersionUID = 4226472686642454212L;
+
+	public Result() {
     } 
     
     public Result(String description) {
@@ -20,4 +21,10 @@ public abstract class Result extends RuntimeException {
        response.setContentTypeIfNotSet(contentType);
     }
 
+    // to save a few CPU cycles
+	@Override
+    public synchronized Throwable fillInStackTrace()
+    {
+		return this;
+    }
 }

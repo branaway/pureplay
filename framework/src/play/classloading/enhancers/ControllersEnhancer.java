@@ -4,6 +4,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import javassist.CannotCompileException;
 import javassist.CtClass;
 import javassist.CtField;
@@ -16,8 +17,10 @@ import javassist.expr.FieldAccess;
 import javassist.expr.Handler;
 import play.Logger;
 import play.Play;
+import play.Suspend;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.exceptions.UnexpectedException;
+import play.mvc.results.Result;
 
 /**
  * Enhance controllers classes. 
@@ -119,7 +122,7 @@ public class ControllersEnhancer extends Enhancer {
                 public void edit(Handler handler) throws CannotCompileException {
                     StringBuffer code = new StringBuffer();
                     try {
-                        code.append("if($1 instanceof play.mvc.results.Result || $1 instanceof play.Invoker.Suspend) throw $1;");
+                        code.append(String.format("if($1 instanceof %s || $1 instanceof %s) throw $1;", Result.class.getName(), Suspend.class.getName() ));
                         handler.insertBefore(code.toString());
                     } catch (NullPointerException e) {
                         // TODO: finally clause ?

@@ -13,6 +13,9 @@ import com.jamonapi.MonitorFactory;
 
 /**
  * Run some code in a Play! context
+ * 
+ * bran: lots  of inner classes were moved out to their source file.
+ * 
  */
 public class Invoker {
 	/**
@@ -32,9 +35,9 @@ public class Invoker {
      * @return The future object, to know when the task is completed
      */
     public static Future<?> invoke(final Invocation invocation) {
-        Monitor monitor = MonitorFactory.getMonitor("Invoker queue size", "elmts.");
-        monitor.add(executor.getQueue().size());
-        invocation.waitInQueue = MonitorFactory.start("Waiting for execution");
+//        Monitor monitor = MonitorFactory.getMonitor("Invoker queue size", "elmts.");
+//        monitor.add(executor.getQueue().size());
+//        invocation.waitInQueue = MonitorFactory.start("Waiting for execution");
         return executor.submit(invocation);
     }
 

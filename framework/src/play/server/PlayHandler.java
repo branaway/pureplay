@@ -1,20 +1,68 @@
 package play.server;
 
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CACHE_CONTROL;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.COOKIE;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.ETAG;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.HOST;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.IF_MODIFIED_SINCE;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.IF_NONE_MATCH;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.LAST_MODIFIED;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.SERVER;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.SET_COOKIE;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferInputStream;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.handler.codec.http.*;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.ChannelFutureProgressListener;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.DefaultFileRegion;
+import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.FileRegion;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.handler.codec.http.Cookie;
+import org.jboss.netty.handler.codec.http.CookieDecoder;
+import org.jboss.netty.handler.codec.http.CookieEncoder;
+import org.jboss.netty.handler.codec.http.DefaultCookie;
+import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.jboss.netty.handler.codec.http.HttpMessage;
+import org.jboss.netty.handler.codec.http.HttpMethod;
+import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.HttpVersion;
+import org.jboss.netty.handler.ssl.SslHandler;
 import org.jboss.netty.handler.stream.ChunkedFile;
 import org.jboss.netty.handler.stream.ChunkedStream;
 
-import play.Invoker;
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
-
+import play.data.validation.Validation;
 import play.exceptions.PlayException;
 import play.exceptions.UnexpectedException;
 import play.i18n.Messages;
@@ -24,21 +72,10 @@ import play.mvc.Http.Request;
 import play.mvc.Http.Response;
 import play.mvc.Scope;
 import play.mvc.results.NotFound;
-import play.mvc.results.RenderStatic;
 import play.templates.JavaExtensions;
 import play.utils.Utils;
 import play.vfs.VirtualFile;
-
-import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.text.ParseException;
-import java.util.*;
-
-import play.data.validation.Validation;
-
-import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.*;
+import bran.RestartException;
 
 public class PlayHandler extends SimpleChannelUpstreamHandler {
 
@@ -51,12 +88,14 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 		final Object msg = e.getMessage();
 		if (msg instanceof HttpRequest) {
 			final HttpRequest nettyRequest = (HttpRequest) msg;
+			final Request request = parseRequest(ctx, nettyRequest);
+			final Response response = new Response();
+
 			try {
-				final Request request = parseRequest(ctx, nettyRequest);
-				final Response response = new Response();
 
 				Http.Response.current.set(response);
-				response.out = new ByteArrayOutputStream();
+				response.out = new ByteArrayOutputStream(1000); 
+//				response.out = BaosThreadStore.checkout();   // this is slower than plain new! wired...
 				boolean raw = false;
 				for (PlayPlugin plugin : Play.plugins) {
 					if (plugin.rawInvocation(request, response)) {
@@ -67,10 +106,26 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 				if (raw) {
 					copyResponse(ctx, request, response, nettyRequest);
 				} else {
-					Invoker.invoke(new NettyInvocation(request, response, ctx, nettyRequest, e));
+//					Invoker.invoke(new NettyInvocation(request, response, ctx, nettyRequest, e));
+					// direct invocation is faster, but suspend won't work.
+					NettyInvocation nettyInvocation = new NettyInvocation(request, response, ctx, nettyRequest, e);
+					// bran hack to implement two phase change detection
+					try {
+						nettyInvocation.run();
+					}
+					catch (RestartException re) {
+						Play.start();
+						nettyInvocation.run();
+					}
 				}
 
-			} catch (Exception ex) {
+			} 
+			catch (NotFound ex) {
+				// bran: the suspend mechanism can be moved here if w use direct NettyInvocation
+				serve404(ex, ctx, request, nettyRequest);
+			}
+			catch (Exception ex) {
+				// bran: the suspend mechanism can be moved here if w use direct NettyInvocation
 				serve500(ex, ctx, nettyRequest);
 			}
 		}
@@ -116,6 +171,16 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 		}
 	}
 
+	/**
+	 * bran: http 1.1 defaults to keep-alive, but 1.0 has no spec about it. Some browsers will observe 
+	 * the Connection: Keep-Alive header. 
+	 * 
+	 * @param nettyResponse
+	 */
+	static public void addKeepAliveHeader(HttpResponse nettyResponse) {
+		nettyResponse.setHeader("Connection", "Keep-Alive");
+	}
+	
 	protected static void addToResponse(Response response, HttpResponse nettyResponse) {
 		Map<String, Http.Header> headers = response.headers;
 		for (Map.Entry<String, Http.Header> entry : headers.entrySet()) {
@@ -152,6 +217,9 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 		byte[] content = null;
 
 		final boolean keepAlive = isKeepAlive(nettyRequest);
+		if (keepAlive)
+			PlayHandler.addKeepAliveHeader(nettyResponse);
+
 		if (nettyRequest.getMethod().equals(HttpMethod.HEAD)) {
 			content = new byte[0];
 		} else {
@@ -183,8 +251,9 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 		// response.out.flush();
 
 		// Decide whether to close the connection or not.
-
-		HttpResponse nettyResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(response.status));
+		// bran: match the version
+		HttpVersion protocolVersion = nettyRequest.getProtocolVersion();
+		HttpResponse nettyResponse = new DefaultHttpResponse(protocolVersion, HttpResponseStatus.valueOf(response.status));
 		nettyResponse.setHeader(SERVER, signature);
 
 		if (response.contentType != null) {
@@ -208,6 +277,9 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 		}
 
 		final boolean keepAlive = isKeepAlive(nettyRequest);
+		if (keepAlive)
+			addKeepAliveHeader(nettyResponse);
+
 		if (file != null && file.isFile()) {
 			try {
 				nettyResponse = addEtag(nettyRequest, nettyResponse, file);
@@ -538,21 +610,21 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 		Logger.trace("serve500: end");
 	}
 
-	public static void serveStatic(RenderStatic renderStatic, ChannelHandlerContext ctx, Request request, Response response,
-			HttpRequest nettyRequest, MessageEvent e) {
+	public static void serveStatic(String staticFile, ChannelHandlerContext ctx, Request request, Response response, HttpRequest nettyRequest) {
 		Logger.trace("serveStatic: begin");
 		HttpResponse nettyResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(response.status));
 		nettyResponse.setHeader("Server", signature);
 		try {
-			VirtualFile file = Play.getVirtualFile(renderStatic.file);
+			VirtualFile file = Play.getVirtualFile(staticFile);
 			if (file != null && file.exists() && file.isDirectory()) {
+				// allow directory default
 				file = file.child("index.html");
 				if (file != null) {
-					renderStatic.file = file.relativePath();
+					staticFile = file.relativePath();
 				}
 			}
 			if ((file == null || !file.exists())) {
-				serve404(new NotFound("The file " + renderStatic.file + " does not exist"), ctx, request, nettyRequest);
+				serve404(new NotFound("The file " + staticFile + " does not exist"), ctx, request, nettyRequest);
 			} else {
 				boolean raw = false;
 				for (PlayPlugin plugin : Play.plugins) {
@@ -566,11 +638,17 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 				} else {
 					final File localFile = file.getRealFile();
 					final boolean keepAlive = isKeepAlive(nettyRequest);
+					if (keepAlive)
+						PlayHandler.addKeepAliveHeader(nettyResponse);
+
 					nettyResponse = addEtag(nettyRequest, nettyResponse, localFile);
 
 					if (nettyResponse.getStatus().equals(HttpResponseStatus.NOT_MODIFIED)) {
 
-						Channel ch = e.getChannel();
+//						Channel ch = e.getChannel();
+						// bran will ctx have everything?
+						Channel ch = ctx.getChannel();
+						
 
 						// Write the initial line and the header.
 						ChannelFuture writeFuture = ch.write(nettyResponse);
@@ -596,13 +674,33 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 
 						nettyResponse.setHeader(CONTENT_TYPE, (MimeTypes.getContentType(localFile.getName(), "text/plain")));
 
-						Channel ch = e.getChannel();
+//						Channel ch = e.getChannel();
+						Channel ch = ctx.getChannel();
 
 						// Write the initial line and the header.
 						ch.write(nettyResponse);
 
-						// Write the content.
-						ChannelFuture writeFuture = ch.write(new ChunkedFile(raf, 0, fileLength, 8192));
+						// bran modified to use zero-copy for http. No,zero-copy on windows is slower!
+						ChannelFuture writeFuture;
+						boolean dontUseZeroCopy = true;
+				        if (dontUseZeroCopy || ch.getPipeline().get(SslHandler.class) != null) {
+				            // Cannot use zero-copy with HTTPS.
+				            writeFuture = ch.write(new ChunkedFile(raf, 0, fileLength, 8192));
+				        } else {
+				            // No encryption - use zero-copy.
+				            final FileRegion region = new DefaultFileRegion(raf.getChannel(), 0, fileLength);
+				            writeFuture = ch.write(region);
+				            writeFuture.addListener(new ChannelFutureProgressListener() {
+				                @Override
+								public void operationComplete(ChannelFuture future) {
+				                    region.releaseExternalResources();
+				                }
+
+								@Override
+								public void operationProgressed(ChannelFuture arg0, long arg1, long arg2, long arg3) throws Exception {
+								}
+				            });
+				        }
 
 						if (!keepAlive) {
 							// Close the connection when the whole content is
@@ -687,7 +785,7 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 	}
 
 	public static boolean isKeepAlive(HttpMessage message) {
-		return HttpHeaders.isKeepAlive(message) && message.getProtocolVersion().equals(HttpVersion.HTTP_1_1);
+		return HttpHeaders.isKeepAlive(message) /*&& message.getProtocolVersion().equals(HttpVersion.HTTP_1_1)*/;
 	}
 
 	public static void setContentLength(HttpMessage message, long contentLength) {

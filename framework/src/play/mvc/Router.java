@@ -1,7 +1,5 @@
 package play.mvc;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -11,17 +9,15 @@ import java.util.Map;
 
 import jregex.Matcher;
 import jregex.Pattern;
-import jregex.REFlags;
 import play.Logger;
 import play.Play;
 import play.Play.Mode;
 import play.PlayPlugin;
-import play.vfs.VirtualFile;
 import play.exceptions.NoRouteFoundException;
 import play.mvc.results.NotFound;
 import play.mvc.results.RenderStatic;
-//import play.templates.TemplateLoader;
 import play.utils.Default;
+import play.vfs.VirtualFile;
 
 /**
  * The router matches HTTP requests to action invocations
@@ -152,7 +148,7 @@ public class Router {
         String content = routeFile.contentAsString();
         if(content.indexOf("${") > -1 || content.indexOf("#{") > -1) {
         	// bran
-        	throw new RuntimeException("bran: to be implented.... ");
+        	throw new RuntimeException("bran: route template to be implented.... ");
 //            content = TemplateLoader.load(routeFile).render(new HashMap<String, Object>());
         }
         for (String line : content.split("\n")) {
@@ -197,7 +193,11 @@ public class Router {
         if (Play.mode == Mode.PROD && lastLoading > 0) {
             return;
         }
-        if (Play.routes.lastModified() > lastLoading) {
+        Long lastModified = Play.routes.lastModified();
+//        System.out.println("route last modified: " + lastModified);
+//        System.out.println("route last loaded: " + lastLoading);
+ 
+		if (lastModified > lastLoading) {
             load(prefix);
         } else {
             for (VirtualFile file : Play.modulesRoutes.values()) {
@@ -228,7 +228,7 @@ public class Router {
 
     public static Route route(Http.Request request) {
         Logger.trace("Route: " + request.path + " - " + request.querystring);
-        // request method may be overriden if a x-http-method-override parameter is given
+        // request method may be overridden if a x-http-method-override parameter is given
         if (request.querystring != null && methodOverride.matches(request.querystring)) {
             Matcher matcher = methodOverride.matcher(request.querystring);
             if (matcher.matches()) {
@@ -456,231 +456,5 @@ public class Router {
             }
         }
         throw new NoRouteFoundException(action, args);
-    }
-
-    public static class ActionDefinition {
-
-        public String method;
-        public String url;
-        public boolean star;
-        public String action;
-        public Map<String, Object> args;
-
-        public ActionDefinition add(String key, Object value) {
-            args.put(key, value);
-            return reverse(action, args);
-        }
-
-        public ActionDefinition remove(String key) {
-            args.remove(key);
-            return reverse(action, args);
-        }
-
-        public ActionDefinition addRef(String fragment) {
-            url += "#" + fragment;
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            return url;
-        }
-
-        public void absolute() {
-            url = Http.Request.current().getBase() + url;
-        }
-
-        public ActionDefinition secure() {
-            if (url.contains("http://")) {
-                url = url.replace("http:", "https:");
-                return this;
-            }
-            url = "https://" + Http.Request.current().host + url;
-            return this;
-        }
-    }
-
-    public static class Route {
-
-        public String method;
-        public String path;
-        public String action;
-        Pattern actionPattern;
-        List<String> actionArgs = new ArrayList<String>();
-        String staticDir;
-        Pattern pattern;
-        Pattern hostPattern;
-        List<Arg> args = new ArrayList<Arg>();
-        Map<String, String> staticArgs = new HashMap<String, String>();
-        List<String> formats = new ArrayList<String>();
-        String host;
-        Arg hostArg = null;
-        public int routesFileLine;
-        public String routesFile;
-        static Pattern customRegexPattern = new Pattern("\\{([a-zA-Z_0-9]+)\\}");
-        static Pattern argsPattern = new Pattern("\\{<([^>]+)>([a-zA-Z_0-9]+)\\}");
-        static Pattern paramPattern = new Pattern("([a-zA-Z_0-9]+):'(.*)'");
-
-        public void compute() {
-            this.host = ".*";
-            this.hostPattern = new Pattern(host);
-            // staticDir
-            if (action.startsWith("staticDir:")) {
-                if (!method.equalsIgnoreCase("*") && !method.equalsIgnoreCase("GET")) {
-                    Logger.warn("Static route only support GET method");
-                    return;
-                }
-                if (!this.path.endsWith("/") && !this.path.equals("/")) {
-                    Logger.warn("The path for a staticDir route must end with / (%s)", this);
-                    this.path += "/";
-                }
-                this.pattern = new Pattern("^" + path + "({resource}.*)$");
-                this.staticDir = action.substring("staticDir:".length());
-            } else {
-                // URL pattern
-                // Is there is a host argument, append it.
-                if (!path.startsWith("/")) {
-                    String p = this.path;
-                    this.path = p.substring(p.indexOf("/"));
-                    this.host = p.substring(0, p.indexOf("/"));
-
-                    Matcher m = new Pattern(".*\\{({name}.*)\\}.*").matcher(host);
-
-                    if (m.matches()) {
-                        String name = m.group("name");
-                        hostArg = new Arg();
-                        hostArg.name = name;
-                    }
-                    this.host = this.host.replaceFirst("\\{.*\\}", "");
-                    this.hostPattern = new Pattern(host);
-                }
-                String patternString = path;
-                patternString = customRegexPattern.replacer("\\{<[^/]+>$1\\}").replace(patternString);
-                Matcher matcher = argsPattern.matcher(patternString);
-                while (matcher.find()) {
-                    Arg arg = new Arg();
-                    arg.name = matcher.group(2);
-                    arg.constraint = new Pattern(matcher.group(1));
-                    args.add(arg);
-                }
-
-                patternString = argsPattern.replacer("({$2}$1)").replace(patternString);
-                this.pattern = new Pattern(patternString);
-                // Action pattern
-                patternString = action;
-                patternString = patternString.replace(".", "[.]");
-                for (Arg arg : args) {
-                    if (patternString.contains("{" + arg.name + "}")) {
-                        patternString = patternString.replace("{" + arg.name + "}", "({" + arg.name + "}" + arg.constraint.toString() + ")");
-                        actionArgs.add(arg.name);
-                    }
-                }
-                actionPattern = new Pattern(patternString, REFlags.IGNORE_CASE);
-            }
-        }
-
-        public void addParams(String params) {
-            if (params == null || params.length() < 1) {
-                return;
-            }
-            params = params.substring(1, params.length() - 1);
-            for (String param : params.split(",")) {
-                Matcher matcher = paramPattern.matcher(param);
-                if (matcher.matches()) {
-                    staticArgs.put(matcher.group(1), matcher.group(2));
-                } else {
-                    Logger.warn("Ignoring %s (static params must be specified as key:'value',...)", params);
-                }
-            }
-        }
-
-        // TODO: Add args names
-        public void addFormat(String params) {
-            if (params == null || params.length() < 1) {
-                return;
-            }
-            params = params.trim();
-            for (String param : params.split(",")) {
-                formats.add(param);
-            }
-        }
-
-        private boolean contains(String accept) {
-            boolean contains = (accept == null);
-            if (accept != null) {
-                if (this.formats.size() == 0) {
-                    return true;
-                }
-                for (String format : this.formats) {
-                    contains = format.startsWith(accept);
-                    if (contains) {
-                        break;
-                    }
-                }
-            }
-            return contains;
-        }
-
-        public Map<String, String> matches(String method, String path) {
-            return matches(method, path, null, null);
-        }
-
-        public Map<String, String> matches(String method, String path, String accept) {
-            return matches(method, path, accept, null);
-        }
-
-        public Map<String, String> matches(String method, String path, String accept, String host) {
-            // If method is HEAD and we have a GET
-            if (method == null || this.method.equals("*") || method.equalsIgnoreCase(this.method) || (method.equalsIgnoreCase("head") && ("get").equalsIgnoreCase(this.method))) {
-
-                Matcher matcher = pattern.matcher(path);
-
-                boolean hostMatches = (host == null);
-                if (host != null) {
-                    Matcher hostMatcher = hostPattern.matcher(host);
-                    hostMatches = hostMatcher.matches();
-                }
-                // Extract the host variable
-                if (matcher.matches() && contains(accept) && hostMatches) {
-                    // Static dir
-                    if (staticDir != null) {
-                        String resource = matcher.group("resource");
-                        try {
-                            String root = new File(staticDir).getCanonicalPath();
-                            String child = new File(staticDir + "/" + resource).getCanonicalPath();
-                            if (child.startsWith(root)) {
-                                throw new RenderStatic(staticDir + "/" + resource);
-                            }
-                        } catch (IOException e) {
-                        }
-                        throw new NotFound(resource);
-                    } else {
-                        Map<String, String> localArgs = new HashMap<String, String>();
-                        for (Arg arg : args) {
-                            localArgs.put(arg.name, matcher.group(arg.name));
-                        }
-                        if (hostArg != null && host != null) {
-                            localArgs.put(hostArg.name, host);
-                        }
-                        localArgs.putAll(staticArgs);
-                        return localArgs;
-                    }
-                }
-            }
-            return null;
-        }
-
-        static class Arg {
-
-            String name;
-            Pattern constraint;
-            String defaultValue;
-            Boolean optional = false;
-        }
-
-        @Override
-        public String toString() {
-            return method + " " + path + " -> " + action;
-        }
     }
 }

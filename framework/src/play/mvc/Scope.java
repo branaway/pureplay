@@ -36,7 +36,7 @@ public class Scope {
         Map<String, String> out = new HashMap<String, String>();
         static Pattern flashParser = Pattern.compile("\u0000([^:]*):([^\u0000]*)\u0000");
 
-        static Flash restore() {
+        public static Flash restore() {
             try {
                 Flash flash = new Flash();
                 Http.Cookie cookie = Http.Request.current().cookies.get(COOKIE_PREFIX + "_FLASH");
@@ -53,7 +53,7 @@ public class Scope {
             }
         }
 
-        void save() {
+        public void save() {
             try {
                 StringBuilder flash = new StringBuilder();
                 for (String key : out.keySet()) {
@@ -70,7 +70,7 @@ public class Scope {
             }
         }        // ThreadLocal access
 
-        static ThreadLocal<Flash> current = new ThreadLocal<Flash>();
+        public static ThreadLocal<Flash> current = new ThreadLocal<Flash>();
 
         public static Flash current() {
             return current.get();
@@ -152,7 +152,7 @@ public class Scope {
 
         static Pattern sessionParser = Pattern.compile("\u0000([^:]*):([^\u0000]*)\u0000");
 
-        static Session restore() {
+        public static Session restore() {
             try {
                 Session session = new Session();
                 Http.Cookie cookie = Http.Request.current().cookies.get(COOKIE_PREFIX + "_SESSION");
@@ -198,7 +198,7 @@ public class Scope {
             return Crypto.sign(getId());
         }
 
-        void save() {
+        public void save() {
             try {
                 StringBuilder session = new StringBuilder();
                 for (String key : data.keySet()) {

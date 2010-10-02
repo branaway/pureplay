@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import org.junit.Before;
 
 import play.classloading.enhancers.ControllersEnhancer.ControllerInstrumentation;
+import play.mvc.ActionDefinition;
 import play.mvc.ActionInvoker;
 import play.mvc.Http;
 import play.mvc.Http.Request;
@@ -26,7 +27,6 @@ import com.ning.http.multipart.MultipartRequestEntity;
 import com.ning.http.multipart.Part;
 import com.ning.http.multipart.StringPart;
 import play.mvc.Controller;
-import play.mvc.Router.ActionDefinition;
 
 /**
  * Application tests support

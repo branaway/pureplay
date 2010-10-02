@@ -4,6 +4,7 @@
 
 GET			/				        Chat.index
 GET         /messages               Chat.newMessages
+GET         /post           	    Chat.postMessage
 POST        /messages               Chat.postMessage
 
 GET         /signin                 Chat.signin

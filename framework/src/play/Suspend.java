@@ -41,4 +41,10 @@ public class Suspend extends PlayException {
         }
         return "Retry in " + timeout + " ms.";
     }
+
+	@Override
+	public synchronized Throwable fillInStackTrace() {
+		return this;
+//		return super.fillInStackTrace();		
+	}
 }
