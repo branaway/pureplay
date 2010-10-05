@@ -53,6 +53,7 @@ import play.vfs.VirtualFile;
  *
  * This is the class that your controllers should extend.
  * 
+ * bran: the class is not used since it uses exception to pass render result. Consider a rewrite.
  */
 public class Controller implements ControllerSupport, LocalVariablesSupport {
 

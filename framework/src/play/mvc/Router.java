@@ -31,6 +31,8 @@ public class Router {
     static Pattern methodOverride = new Pattern("^.*x-http-method-override=({method}GET|PUT|POST|DELETE).*$");
     public static long lastLoading = -1;
 
+    public static List<Route> routes = new ArrayList<Route>(500);
+
     public static void load(String prefix) {
         routes.clear();
         parse(Play.routes, prefix);
@@ -208,7 +210,6 @@ public class Router {
             }
         }
     }
-    public static List<Route> routes = new ArrayList<Route>(500);
 
     public static void routeOnlyStatic(Http.Request request) {
         for (Route route : routes) {

@@ -3,6 +3,7 @@ package play.mvc;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -26,6 +27,7 @@ import play.exceptions.JavaExecutionException;
 import play.exceptions.PlayException;
 import play.exceptions.UnexpectedException;
 import play.i18n.Lang;
+import play.mvc.Scope.Params;
 import play.mvc.results.NoResult;
 import play.mvc.results.NotFound;
 import play.mvc.results.Result;
@@ -320,19 +322,20 @@ public class ActionInvoker {
             // @Finally
             if (Controller.getControllerClass() != null) {
                 try {
-                    List<Method> allFinally = Java.findAllAnnotatedMethods(Controller.getControllerClass(), Finally.class);
+                	final Class<? extends Annotation> annotationType = (Class<? extends Annotation>) Finally.class;
+					List<Method> allFinally = Java.findAllAnnotatedMethods(Controller.getControllerClass(), annotationType);
                     Collections.sort(allFinally, new Comparator<Method>() {
 
                         public int compare(Method m1, Method m2) {
-                            Finally finally1 = m1.getAnnotation(Finally.class);
-                            Finally finally2 = m2.getAnnotation(Finally.class);
+                            Finally finally1 = (Finally) m1.getAnnotation(annotationType);
+                            Finally finally2 = (Finally) m2.getAnnotation(annotationType );
                             return finally1.priority() - finally2.priority();
                         }
                     });
                     ControllerInstrumentation.stopActionCall();
                     for (Method aFinally : allFinally) {
-                        String[] unless = aFinally.getAnnotation(Finally.class).unless();
-                        String[] only = aFinally.getAnnotation(Finally.class).only();
+                        String[] unless = ((Finally) aFinally.getAnnotation(annotationType )).unless();
+                        String[] only = ((Finally) aFinally.getAnnotation(annotationType )).only();
                         boolean skip = false;
                         for (String un : only) {
                             if (!un.contains(".")) {
@@ -422,9 +425,10 @@ public class ActionInvoker {
 //        if (Modifier.isStatic(method.getModifiers()) && !controllerSynthClassPattern.matcher(method.getDeclaringClass().getName()).matches()) {
         String className = method.getDeclaringClass().getName();
         // bran: optimize out the use of regex
-		if (Modifier.isStatic(method.getModifiers()) && !(className.startsWith("controllers") && className.endsWith("$class$"))) {
+		boolean isStatic = Modifier.isStatic(method.getModifiers());
+		if (isStatic && !(className.startsWith("controllers") && className.endsWith("$class$"))) {
             return method.invoke(null, getActionMethodArgs(method, null));
-        } else if (Modifier.isStatic(method.getModifiers())) {
+        } else if (isStatic) {
             Object[] args = getActionMethodArgs(method, null);
             args[0] = Http.Request.current().controllerClass.getDeclaredField("MODULE$").get(null);
             return method.invoke(null, args);
@@ -487,14 +491,18 @@ public class ActionInvoker {
 
             Class<?> type = method.getParameterTypes()[i];
             Map<String, String[]> params = new HashMap<String, String[]>();
-            if (type.equals(String.class) || Number.class.isAssignableFrom(type) || type.isPrimitive()) {
-                params.put(paramsNames[i], Scope.Params.current().getAll(paramsNames[i]));
+            
+            String paramName = paramsNames[i];
+			Params currentParams = Scope.Params.current();
+			
+			if (type.equals(String.class) || Number.class.isAssignableFrom(type) || type.isPrimitive()) {
+                params.put(paramName, currentParams.getAll(paramName));
             } else {
-                params.putAll(Scope.Params.current().all());
+                params.putAll(currentParams.all());
             }
-            Logger.trace("getActionMethodArgs name [" + paramsNames[i] + "] annotation [" + Utils.join(method.getParameterAnnotations()[i], " ") + "]");
+            Logger.trace("getActionMethodArgs name [" + paramName + "] annotation [" + Utils.join(method.getParameterAnnotations()[i], " ") + "]");
 
-            rArgs[i] = Binder.bind(paramsNames[i], method.getParameterTypes()[i], method.getGenericParameterTypes()[i], method.getParameterAnnotations()[i], params, o, method, i + 1);
+            rArgs[i] = Binder.bind(paramName, method.getParameterTypes()[i], method.getGenericParameterTypes()[i], method.getParameterAnnotations()[i], params, o, method, i + 1);
         }
         return rArgs;
     }

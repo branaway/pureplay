@@ -14,16 +14,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.FutureTask;
+
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.bytecode.SourceFileAttribute;
 import play.Play;
 import play.classloading.enhancers.LocalvariablesNamesEnhancer.LocalVariablesNamesTracer;
 import play.data.binding.Binder;
+import play.data.validation.Validation;
 import play.exceptions.UnexpectedException;
 import play.mvc.After;
 import play.mvc.Before;
 import play.mvc.Finally;
+import play.mvc.Http.Request;
+import play.mvc.Http.Response;
+import play.mvc.Scope.Flash;
+import play.mvc.Scope.Params;
+import play.mvc.Scope.RenderArgs;
+import play.mvc.Scope.RouteArgs;
+import play.mvc.Scope.Session;
 import play.mvc.With;
 
 /**
@@ -91,13 +100,13 @@ public class Java {
      * @return The result
      * @throws java.lang.Exception
      */
-    public static Object invokeStatic(Class<?> clazz, String method) throws Exception {
-        return invokeStatic(clazz, method, new Object[0]);
-    }
-
-    public static Object invokeStatic(String clazz, String method) throws Exception {
-        return invokeStatic(Play.classloader.loadClass(clazz), method, new Object[0]);
-    }
+//    public static Object invokeStatic(Class<?> clazz, String method) throws Exception {
+//        return invokeStatic(clazz, method, new Object[0]);
+//    }
+//
+//    public static Object invokeStatic(String clazz, String method) throws Exception {
+//        return invokeStatic(Play.classloader.loadClass(clazz), method, new Object[0]);
+//    }
 
     /**
      * Invoke a static method with args
@@ -107,15 +116,15 @@ public class Java {
      * @return The result
      * @throws java.lang.Exception
      */
-    public static Object invokeStatic(Class<?> clazz, String method, Object... args) throws Exception {
-        Class[] types = new Class[args.length];
-        for (int i = 0; i < args.length; i++) {
-            types[i] = args[i].getClass();
-        }
-        Method m = clazz.getDeclaredMethod(method, types);
-        m.setAccessible(true);
-        return m.invoke(null, args);
-    }
+//    public static Object invokeStatic(Class<?> clazz, String method, Object... args) throws Exception {
+//        Class[] types = new Class[args.length];
+//        for (int i = 0; i < args.length; i++) {
+//            types[i] = args[i].getClass();
+//        }
+//        Method m = clazz.getDeclaredMethod(method, types);
+//        m.setAccessible(true);
+//        return m.invoke(null, args);
+//    }
 
     public static Object invokeStaticOrParent(Class<?> clazz, String method, Object... args) throws Exception {
         Class[] types = new Class[args.length];
@@ -380,5 +389,35 @@ public class Java {
             return "FieldWrapper (" + (writable ? "RW" : "R ") + ") for " + field;
         }
     }
-
-}
+    
+    
+    @SuppressWarnings("unchecked")
+	public static <T> T specialFieldRead(Class<T> c) {
+    	if (c == Params.class) {
+    		return (T) Params.current();
+    	}
+    	else if (c == Request.class){
+    		return (T) Request.current();
+    	}
+    	else if (c == Response.class){
+    		return (T) Response.current();
+    	}
+    	else if (c == Session.class){
+    		return (T) Session.current();
+    	}
+    	else if (c == RenderArgs.class){
+    		return (T) RenderArgs.current();
+    	}
+    	else if (c == RouteArgs.class){
+    		return (T) RouteArgs.current();
+    	}
+    	else if (c == Validation.class){
+    		return (T) Validation.current();
+    	}
+    	else if (c == Flash.class){
+    		return (T) Flash.current();
+    	}
+    	
+    	return null;
+    }
+ }

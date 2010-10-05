@@ -139,6 +139,8 @@ public class Play {
 	public static String version = null;
 	// pv
 	static boolean firstStart = true;
+	
+	// bran: XXX where is flag set?
 	public static boolean usePrecompiled = false;
 	/**
 	 * Lazy load the templates on demand
@@ -393,15 +395,17 @@ public class Play {
 				Logger.warn("No secret key defined. Sessions will not be encrypted");
 			}
 
-			// Try to load all classes // bran: this will also pick up new
-			// classes
-			if (firstStart)
-				StaticRouterPlugin.clearRouteFile();
+			// Try to load all classes 
+			// bran: this will also pick up new classes
+			// bran
+//			if (firstStart)
+//				StaticRouterPlugin.clearRouteFile();
 
 			try {
 				Play.classloader.getAllClasses();
-				if (firstStart)
-					StaticRouterPlugin.rebuild();
+				// bran
+//				if (firstStart)
+//					StaticRouterPlugin.rebuild();
 			}
 			catch (CompilationException e) {
 				if (e.getSourceFile().endsWith(StaticRouterPlugin.DISPATCHER_JAVA)) {
@@ -505,20 +509,28 @@ public class Play {
 	 * Detect sources modifications. bran: changed to return a boolean for a hint to rerun the detection in current request 
 	 */
 	public static synchronized boolean detectChanges() {
-	
-		
 		if (mode == Mode.PROD) {
 			return skipDetection;
 		}
 
+		if (timeout())
+			return doDetect();
+		else {
+			return skipDetection;
+		}
+	}
+
+	/**
+	 * 
+	 */
+	private static boolean timeout() {
 		// bran: give a delay
 		if (System.currentTimeMillis() - lastTimeChecked.get() < Long.parseLong(configuration.getProperty(
 				"bran.play.dev.detect.change.interval", "2000")))
 			return skipDetection;
 		else
 			lastTimeChecked.set(System.currentTimeMillis());
-
-		return doDetect();
+		return true;
 	}
 
 	static boolean skipDetection = false;

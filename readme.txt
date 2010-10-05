@@ -23,7 +23,7 @@ History:
 
 2010.10.2, version 1.2alpha
 
-- experiment implementation of Fast Play: 
+- experiment implementation of Fast Play, a statically routed HTTP processing.
 -- run NettyInvocation directly from the PlayHandler to circumvent the Invoker layer, 20-30% performance gain.
 -- Special plugin StaticRouterPlugin that creates a Java class that tranlates the routing rules
 in the routes files to statically linked controller action calls. The removal of the reflection based action

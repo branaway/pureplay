@@ -22,7 +22,7 @@ public class Route {
     Pattern actionPattern;
     List<String> actionArgs = new ArrayList<String>();
     String staticDir;
-    Pattern pattern;
+    Pattern pattern; // the path pattern
     Pattern hostPattern;
     List<Route.Arg> args = new ArrayList<Route.Arg>();
     Map<String, String> staticArgs = new HashMap<String, String>();
@@ -31,9 +31,9 @@ public class Route {
     Route.Arg hostArg = null;
     public int routesFileLine;
     public String routesFile;
-    static Pattern customRegexPattern = new Pattern("\\{([a-zA-Z_0-9]+)\\}");
-    static Pattern argsPattern = new Pattern("\\{<([^>]+)>([a-zA-Z_0-9]+)\\}");
-    static Pattern paramPattern = new Pattern("([a-zA-Z_0-9]+):'(.*)'");
+    static Pattern customRegexPattern = new Pattern("\\{([a-zA-Z_0-9]+)\\}"); // the dynamic part in path
+    static Pattern argsPattern = new Pattern("\\{<([^>]+)>([a-zA-Z_0-9]+)\\}"); // the dynamic part with constraint
+    static Pattern paramPattern = new Pattern("([a-zA-Z_0-9]+):'(.*)'"); // the default args in action
 
     public void compute() {
         this.host = ".*";
@@ -203,5 +203,9 @@ public class Route {
     @Override
     public String toString() {
         return method + " " + path + " -> " + action;
+    }
+    
+    public boolean isStatic() {
+    	return staticDir != null;
     }
 }

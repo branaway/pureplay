@@ -8,11 +8,13 @@ import play.mvc.Http;
 public abstract class Result extends RuntimeException {
     private static final long serialVersionUID = 4226472686642454212L;
 
+    String description;
+    
 	public Result() {
     } 
     
     public Result(String description) {
-        super(description);
+        this.description = description;
     }
     
     public abstract void apply(Http.Request request, Http.Response response);
@@ -21,10 +23,10 @@ public abstract class Result extends RuntimeException {
        response.setContentTypeIfNotSet(contentType);
     }
 
-    // to save a few CPU cycles
-	@Override
-    public synchronized Throwable fillInStackTrace()
-    {
-		return this;
-    }
+//    // to save a few CPU cycles
+//	@Override
+//    public synchronized Throwable fillInStackTrace()
+//    {
+//		return this;
+//    }
 }

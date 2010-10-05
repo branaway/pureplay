@@ -45,7 +45,10 @@ public class ControllersEnhancer extends Enhancer {
                     try {
                         if (isThreadedFieldAccess(fieldAccess.getField())) {
                             if (fieldAccess.isReader()) {
-                                fieldAccess.replace("$_ = ($r)play.utils.Java.invokeStatic($type, \"current\");");
+                            	// original
+//                                fieldAccess.replace("$_ = ($r)play.utils.Java.invokeStatic($type, \"current\");");
+                            	// bran sort of optimization
+                                fieldAccess.replace("$_ = ($r)play.utils.Java.specialFieldRead($type);");
                             }
                         }
                     } catch (Exception e) {
@@ -154,7 +157,6 @@ public class ControllersEnhancer extends Enhancer {
                     || field.getName().equals("request")
                     || field.getName().equals("response")
                     || field.getName().equals("session")
-                    || field.getName().equals("params")
                     || field.getName().equals("renderArgs")
                     || field.getName().equals("routeArgs")
                     || field.getName().equals("validation")

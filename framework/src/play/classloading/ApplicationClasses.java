@@ -11,7 +11,6 @@ import java.util.Map;
 
 import play.Logger;
 import play.Play;
-import play.Play.Mode;
 import play.PlayPlugin;
 import play.classloading.enhancers.ControllersEnhancer;
 import play.classloading.enhancers.Enhancer;
@@ -29,8 +28,6 @@ import bran.plugins.StaticRouterPlugin;
  * Application classes container.
  */
 public class ApplicationClasses {
-
-	private static final String ROUTER_DISPATCHER = "Dispatcher";
 	/**
 	 * Reference to the eclipse compiler.
 	 */
@@ -362,7 +359,7 @@ public class ApplicationClasses {
 
 	private void findSAI2() {
 		Play.classloader.getAllClasses();
-		ApplicationClass c = getApplicationClass(ROUTER_DISPATCHER);
+		ApplicationClass c = getApplicationClass(StaticRouterPlugin.DISPATCHER_CLASS);
 		if (c == null)
 			return;
 		Class<?> clz = null;
@@ -387,10 +384,10 @@ public class ApplicationClasses {
 	 */
 	private void findSAI1() {
 		Play.classloader.getAllClasses();
-		ApplicationClass ac = getApplicationClass(ROUTER_DISPATCHER);
+		ApplicationClass ac = getApplicationClass(StaticRouterPlugin.DISPATCHER_CLASS);
 
 		if (ac == null) {
-			if (getJava(ROUTER_DISPATCHER) != null) {
+			if (getJava(StaticRouterPlugin.DISPATCHER_JAVA) != null) {
 				// ac = new ApplicationClass(ROUTER_DISPATCHER);
 			} else
 				return;
@@ -414,7 +411,7 @@ public class ApplicationClasses {
 				StaticActionInvoker inst = (StaticActionInvoker) constructor.newInstance();
 				staticActionInvoker = inst;
 			} catch (Exception e) {
-				Logger.error(ROUTER_DISPATCHER, e);
+				Logger.error(StaticRouterPlugin.DISPATCHER_CLASS, e);
 				return;
 			}
 		}
@@ -428,7 +425,7 @@ public class ApplicationClasses {
 	public void clearStaticActionInvoker() {
 		this.staticActionInvoker = null;
 		// staticInvokerSearchedInClassLoader = false;
-		ApplicationClass ac = getApplicationClass(ROUTER_DISPATCHER);
+		ApplicationClass ac = getApplicationClass(StaticRouterPlugin.DISPATCHER_CLASS);
 		if (ac != null) {
 			ac.refresh();
 		}

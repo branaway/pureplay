@@ -283,7 +283,7 @@ public class ApplicationClassloader extends ClassLoader {
 		for (ApplicationClass applicationClass : Play.classes.all()) {
 			if (applicationClass.timestamp < applicationClass.javaFile.lastModified()) {
 				// bran
-				if (applicationClass.name.equals(StaticRouterPlugin.DISPATCHER_CLASS))
+				if (applicationClass.name.startsWith(StaticRouterPlugin.STATIC_ROUTING_PKG))
 					continue;
 				// //
 				applicationClass.refresh();

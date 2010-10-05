@@ -3,6 +3,7 @@ package play.server;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -135,8 +136,24 @@ public class Server {
 	}
 
 	public static void main(String[] args) throws Exception {
+//		Map<String, String> env = System.getenv();
+//		System.out.println("-- envs: ");
+//		for (String k : env.keySet()) {
+//			System.out.println(k + ":" + env.get(k));
+//		}
+//		
+//		System.out.println("-- props: ");
+//		Properties props = System.getProperties();
+//		for (Object k : props.keySet()) {
+//			System.out.println(k + ":" + props.get(k));
+//		}
+//		
+		
 		File root = new File(System.getProperty("application.path"));
+		//
 		Play.init(root, System.getProperty("play.id", ""));
+		
+		// if not precompile, start the Netty server
 		if (System.getProperty("precompile") == null) {
 			new Server();
 		} else {
