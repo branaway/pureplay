@@ -124,7 +124,10 @@ public class PropertiesEnhancer extends Enhancer {
                             if (propertyName == null || !propertyName.equals(fieldAccess.getFieldName())) {
 
                                 String invocationPoint = ctClass.getName() + "." + ctMethod.getName() + ", ligne " + fieldAccess.getLineNumber();
-
+                                
+                                // XXX bran: can these two transforms not use reflections for faster access? no... because the model class has not been enhanced yet thus will 
+                                // lead to linkage error. Perhaps we can work on the source code level rather than bytecode level.
+                                
                                 if (fieldAccess.isReader()) {
 
                                     // Réécris l'accés en lecture à la property
@@ -173,7 +176,8 @@ public class PropertiesEnhancer extends Enhancer {
             if (o == null) {
                 throw new NullPointerException("Try to read " + property + " on null object " + targetType + " (" + invocationPoint + ")");
             }
-            if (o.getClass().getClassLoader() == null || !o.getClass().getClassLoader().equals(Play.classloader)) {
+            ClassLoader classLoader = o.getClass().getClassLoader();
+			if ( classLoader == null || !classLoader.equals(Play.classloader)) {
                 return o.getClass().getField(property).get(o);
             }
             String getter = "get" + property.substring(0, 1).toUpperCase() + property.substring(1);

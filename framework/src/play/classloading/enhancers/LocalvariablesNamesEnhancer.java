@@ -23,6 +23,8 @@ import play.classloading.ApplicationClasses.ApplicationClass;
 
 /**
  * Track names of local variables ...
+ *  bran: TODO: remove this eventually since Japid engine does not concern about it. 
+ *
  */
 public class LocalvariablesNamesEnhancer extends Enhancer {
 

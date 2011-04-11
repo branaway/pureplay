@@ -24,6 +24,8 @@ import play.mvc.results.Result;
 
 /**
  * Enhance controllers classes. 
+ * 
+ * bran; TODO: eventaully remove this thing.   
  */
 public class ControllersEnhancer extends Enhancer {
 
@@ -37,7 +39,7 @@ public class ControllersEnhancer extends Enhancer {
 
         for (final CtMethod ctMethod : ctClass.getDeclaredMethods()) {
 
-            // Threaded access		
+            // Threaded access to request, response, session, flash, etc,
             ctMethod.instrument(new ExprEditor() {
 
                 @Override
@@ -47,7 +49,7 @@ public class ControllersEnhancer extends Enhancer {
                             if (fieldAccess.isReader()) {
                             	// original
 //                                fieldAccess.replace("$_ = ($r)play.utils.Java.invokeStatic($type, \"current\");");
-                            	// bran sort of optimization
+                            	// bran sort of optimization. These are for intercepting field access to the request, response, session, etc.
                                 fieldAccess.replace("$_ = ($r)play.utils.Java.specialFieldRead($type);");
                             }
                         }

@@ -3,7 +3,6 @@ package play.server;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -76,13 +75,13 @@ public class Server {
 			ExecutorService bossExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
                     60L, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>(), 
-                    new MyThreadFactory("boss")
+                    new MyThreadFactory("netty boss")
 			);
 
 			ExecutorService workerExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
 					60L, TimeUnit.SECONDS,
 					new SynchronousQueue<Runnable>(), 
-					new MyThreadFactory("worker")
+					new MyThreadFactory("netty worker")
 			);
 			
 //			ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
@@ -94,18 +93,26 @@ public class Server {
 					new NioServerSocketChannelFactory(bossExecutor, workerExecutor, core));
 
 			bootstrap.setPipelineFactory(new HttpServerPipelineFactory());
-			bootstrap.setOption("child.tcpNoDelay", true);
+			// no  latency, but reduced bandwidth? not really. true seems faster
+			bootstrap.setOption("child.tcpNoDelay", true); 
+			// bran: set a big send buffer
+//			bootstrap.setOption("child.sendBufferSize", 32768);
 			// bran: some other options we may consider
-			// bootstrap.setOption("child.receiveBufferSize", 1048576); // some
-			// linux will auto-tune this
-			// bootstrap.setOption("child.keepAlive", true);
+			
+			// some linux will auto-tune receive buffer 
+			// bootstrap.setOption("child.receiveBufferSize", 1048576);
+			
+			// keepalive may slow down the thing
+//			bootstrap.setOption("child.keepAlive", true);
+			
 			bootstrap.bind(new InetSocketAddress(address, httpPort));
 
-//			// bran: create another instance binding to default port + 1
+			// bran: create another instance binding to default port + 1
 //			bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
 //					Executors.newCachedThreadPool()));
 //			bootstrap.setPipelineFactory(new HttpServerPipelineFactory());
 //			bootstrap.setOption("child.tcpNoDelay", true);
+//			bootstrap.setOption("child.sendBufferSize", 32768);
 //			// bran: some other options we may consider
 //			// bootstrap.setOption("child.receiveBufferSize", 1048576); // some
 //			// linux will auto-tune this

@@ -74,7 +74,7 @@ class PlayApplication:
 
     def load_modules(self):
         if os.environ.has_key('MODULES'):
-            if os.name == 'nt':
+            if os.name == 'nt' or sys.platform == 'cygwin':
                 modules = os.environ['MODULES'].split(';')
             else:
                 modules = os.environ['MODULES'].split(':')
@@ -145,7 +145,8 @@ class PlayApplication:
         return classpath
 
     def agent_path(self):
-        return os.path.join(self.play_env["basedir"], 'framework/play.jar')
+#        return os.path.join(self.play_env["basedir"], 'framework/play.jar')
+        return os.path.join(self.play_env["basedir"], 'framework/lib/PlayAgent.jar')
 
     def cp_args(self):
         classpath = self.getClasspath()
@@ -153,7 +154,7 @@ class PlayApplication:
         osname = os.getenv('OS')
 # cygwin's os.name is posix, not showing windows. use getenv('OS')
 #        if osname == 'Windows_NT':
-        if os.name == 'nt':
+        if os.name == 'nt' or sys.platform == 'cygwin':
             cp_args = ';'.join(classpath)
         return cp_args
 

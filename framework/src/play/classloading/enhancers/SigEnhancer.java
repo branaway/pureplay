@@ -39,17 +39,22 @@ public class SigEnhancer extends Enhancer {
             for (Annotation annotation : getAnnotations(method).getAnnotations()) {
                 sigChecksum.append(annotation + " ");
             }
-            // Signatures names
-            CodeAttribute codeAttribute = (CodeAttribute) method.getMethodInfo().getAttribute("Code");
-            if (codeAttribute == null || javassist.Modifier.isAbstract(method.getModifiers())) {
-                continue;
-            }
-            LocalVariableAttribute localVariableAttribute = (LocalVariableAttribute) codeAttribute.getAttribute("LocalVariableTable");
-            if (localVariableAttribute != null) {
-                for (int i = 0; i < localVariableAttribute.tableLength(); i++) {
-                    sigChecksum.append(localVariableAttribute.variableName(i) + ",");
-                }
-            }
+            
+            // bran: how about no check on local vars at all?
+            // this for controllers so that the old rendering engine will match locals to the references in the Groovy views. 
+            // take this out since we're not depending on the locals for parameter passing.  
+            
+//            // Signatures names
+//            CodeAttribute codeAttribute = (CodeAttribute) method.getMethodInfo().getAttribute("Code");
+//            if (codeAttribute == null || javassist.Modifier.isAbstract(method.getModifiers())) {
+//                continue;
+//            }
+//            LocalVariableAttribute localVariableAttribute = (LocalVariableAttribute) codeAttribute.getAttribute("LocalVariableTable");
+//            if (localVariableAttribute != null) {
+//                for (int i = 0; i < localVariableAttribute.tableLength(); i++) {
+//                    sigChecksum.append(localVariableAttribute.variableName(i) + ",");
+//                }
+//            }
         }
         
         if(ctClass.getClassInitializer() != null) {

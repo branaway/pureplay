@@ -482,6 +482,10 @@ public class Play {
 			return false;
 		}
 		try {
+			// was thinking doing this but it requires the router info, which only takes place in 
+//			Logger.info("Static routing rebuild.");
+//			StaticRouterPlugin.rebuild();
+			
 			Logger.info("Precompiling ...");
 			long start = System.currentTimeMillis();
 			classloader.getAllClasses();

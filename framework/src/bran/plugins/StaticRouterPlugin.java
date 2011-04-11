@@ -103,7 +103,8 @@ public class StaticRouterPlugin extends PlayPlugin {
 	@Override
 	public boolean rawInvocation(Request request, Response response) throws Exception {
 		if (request.path.equals("/_rr") || request.path.equals("/_rebuildRouting")) {
-			if (Play.mode == Mode.PROD) {
+			// ignore mode for now
+			if (false && Play.mode == Mode.PROD) {
 				String x = "cannot rebuild the routing table in PROD mode.";
 				response.out.write(x.getBytes());
 				return true;

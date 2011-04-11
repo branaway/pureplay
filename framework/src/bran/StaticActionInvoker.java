@@ -18,7 +18,6 @@ import play.mvc.Route;
 import play.mvc.Router;
 import play.mvc.Scope;
 import play.mvc.Scope.Params;
-import play.mvc.results.NotFound;
 import play.mvc.results.Result;
 import play.server.NettyInvocation;
 

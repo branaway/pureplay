@@ -31,8 +31,10 @@ import play.exceptions.UnexpectedException;
  */
 @MappedSuperclass
 public class JPABase implements Serializable, play.db.Model {
+	private static final long serialVersionUID = -2559888850992649390L;
 
-    public void _save() {
+	@Override
+	public void _save() {
         if (!em().contains(this)) {
             em().persist(this);
             PlayPlugin.postEvent("JPASupport.objectPersisted", this);
@@ -60,7 +62,8 @@ public class JPABase implements Serializable, play.db.Model {
         }
     }
 
-    public void _delete() {
+    @Override
+	public void _delete() {
         try {
             avoidCascadeSaveLoops.set(new ArrayList<JPABase>());
             try {
@@ -92,7 +95,8 @@ public class JPABase implements Serializable, play.db.Model {
         }
     }
 
-    public Object _key() {
+    @Override
+	public Object _key() {
         return Model.Manager.factoryFor(this.getClass()).keyValue(this);
     }
 
@@ -113,7 +117,7 @@ public class JPABase implements Serializable, play.db.Model {
         // Cascade save
         try {
             Set<Field> fields = new HashSet<Field>();
-            Class clazz = this.getClass();
+            Class<?> clazz = this.getClass();
             while (!clazz.equals(JPABase.class)) {
                 Collections.addAll(fields, clazz.getDeclaredFields());
                 clazz = clazz.getSuperclass();
@@ -143,7 +147,7 @@ public class JPABase implements Serializable, play.db.Model {
                     }
                     if (value instanceof PersistentMap) {
                         if (((PersistentMap) value).wasInitialized()) {
-                            for (Object o : ((Map) value).values()) {
+                            for (Object o : ((Map<?, ?>) value).values()) {
                                 if (o instanceof JPABase) {
                                     ((JPABase) o).saveAndCascade(willBeSaved);
                                 }
@@ -153,7 +157,7 @@ public class JPABase implements Serializable, play.db.Model {
                     }
                     if (value instanceof PersistentCollection) {
                         if (((PersistentCollection) value).wasInitialized()) {
-                            for (Object o : (Collection) value) {
+                            for (Object o : (Collection<?>) value) {
                                 if (o instanceof JPABase) {
                                     ((JPABase) o).saveAndCascade(willBeSaved);
                                 }
@@ -231,8 +235,9 @@ public class JPABase implements Serializable, play.db.Model {
     }
 
     public static class JPAQueryException extends RuntimeException {
+		private static final long serialVersionUID = 7348124403502227968L;
 
-        public JPAQueryException(String message) {
+		public JPAQueryException(String message) {
             super(message);
         }
 

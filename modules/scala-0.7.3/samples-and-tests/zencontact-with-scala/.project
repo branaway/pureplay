@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>Zencontact, by zenexity</name>
+	<name>Zencontact, pureplay</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -16,8 +16,21 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.playframework.playclipse.playNature</nature>
 	</natures>
-	<linkedResources><link><name>japid-head</name><type>2</type><location>D:/home/bran/projects/play/modules/japid-head/app</location></link>
-<link><name>conf/japid-head</name><type>2</type><location>D:/home/bran/projects/play/modules/japid-head/conf</location></link>
-<link><name>scala-0.7.3</name><type>2</type><location>D:/projects/pureplay1.1/modules/scala-0.7.3/app</location></link>
-</linkedResources>
+	<linkedResources>
+		<link>
+			<name>japid-head</name>
+			<type>2</type>
+			<location>D:/home/bran/projects/play/modules/japid-head/app</location>
+		</link>
+		<link>
+			<name>scala-0.7.3</name>
+			<type>2</type>
+			<location>D:/projects/pureplay1.1/modules/scala-0.7.3/app</location>
+		</link>
+		<link>
+			<name>conf/japid-head</name>
+			<type>2</type>
+			<location>D:/home/bran/projects/play/modules/japid-head/conf</location>
+		</link>
+	</linkedResources>
 </projectDescription>
