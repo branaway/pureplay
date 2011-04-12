@@ -95,6 +95,7 @@ public class Server {
 			bootstrap.setPipelineFactory(new HttpServerPipelineFactory());
 			// no  latency, but reduced bandwidth? not really. true seems faster
 			bootstrap.setOption("child.tcpNoDelay", true); 
+//			bootstrap.setOption("backlog", 200); 
 			// bran: set a big send buffer
 //			bootstrap.setOption("child.sendBufferSize", 32768);
 			// bran: some other options we may consider

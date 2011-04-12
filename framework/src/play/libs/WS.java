@@ -3,40 +3,32 @@ package play.libs;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.Future;
 
+import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
+import play.libs.OAuth.ServiceInfo;
+import play.libs.OAuth.TokenPair;
+import play.libs.ws.WSAsync;
+import play.libs.ws.WSUrlFetch;
+import play.libs.F.Promise;
 import play.mvc.Http.Header;
+import play.utils.NoOpEntityResolver;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.ning.http.client.AsyncCompletionHandler;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.AsyncHttpClientConfig.Builder;
-import com.ning.http.client.FilePart;
-import com.ning.http.client.Headers;
-import com.ning.http.client.ProxyServer;
-import com.ning.http.client.Response;
-import com.ning.http.client.StringPart;
-import javax.xml.parsers.DocumentBuilder;
-import play.utils.NoOpEntityResolver;
 
 /**
  * Simple HTTP client to make webservices requests.
@@ -44,7 +36,7 @@ import play.utils.NoOpEntityResolver;
  * <p/>
  * Get latest BBC World news as a RSS content
  * <pre>
- *    response = WS.GET("http://newsrss.bbc.co.uk/rss/newsonline_world_edition/front_page/rss.xml");
+ *    HttpResponse response = WS.url("http://newsrss.bbc.co.uk/rss/newsonline_world_edition/front_page/rss.xml").get();
  *    Document xmldoc = response.getXml();
  *    // the real pain begins here...
  * </pre>
@@ -52,7 +44,7 @@ import play.utils.NoOpEntityResolver;
  * 
  * Search what Yahoo! thinks of google (starting from the 30th result).
  * <pre>
- *    response = WS.GET("http://search.yahoo.com/search?p=<em>%s</em>&pstart=1&b=<em>%d</em>", "Google killed me", 30 );
+ *    HttpResponse response = WS.url("http://search.yahoo.com/search?p=<em>%s</em>&pstart=1&b=<em>%s</em>", "Google killed me", "30").get();
  *    if( response.getStatus() == 200 ) {
  *       html = response.getString();
  *    }
@@ -60,35 +52,33 @@ import play.utils.NoOpEntityResolver;
  */
 public class WS extends PlayPlugin {
 
-    private static AsyncHttpClient httpClient;
+    private static WSImpl wsImpl = null;
 
     @Override
     public void onApplicationStop() {
-        Logger.trace("Releasing http client connections...");
-        httpClient.close();
+        if (wsImpl != null) {
+            wsImpl.stop();
+            wsImpl = null;
+        }
     }
 
-    @Override
-    public void onApplicationStart() {
-        String proxyHost = Play.configuration.getProperty("http.proxyHost", System.getProperty("http.proxyHost"));
-        String proxyPort = Play.configuration.getProperty("http.proxyPort", System.getProperty("http.proxyPort"));
-        String proxyUser = Play.configuration.getProperty("http.proxyUser", System.getProperty("http.proxyUser"));
-        String proxyPassword = Play.configuration.getProperty("http.proxyPassword", System.getProperty("http.proxyPassword"));
-
-        Builder confBuilder = new AsyncHttpClientConfig.Builder();
-        if (proxyHost != null) {
-            int proxyPortInt = 0;
+    private synchronized static void init() {
+        if (wsImpl != null) return;
+        String implementation = Play.configuration.getProperty("webservice", "async");
+        if (implementation.equals("urlfetch")) {
+            wsImpl = new WSUrlFetch();
+            Logger.trace("Using URLFetch for web service");
+        } else if (implementation.equals("async")) {
+            Logger.trace("Using Async for web service");
+            wsImpl = new WSAsync();
+        } else {
             try {
-                proxyPortInt = Integer.parseInt(proxyPort);
-            } catch (NumberFormatException e) {
-                Logger.error("Cannot parse the proxy port property '%s'. Check property http.proxyPort either in System configuration or in Play config file.", proxyPort);
-                throw new IllegalStateException("WS proxy is misconfigured -- check the logs for details");
+                wsImpl = (WSImpl)Play.classloader.loadClass(implementation).newInstance();
+                Logger.trace("Using the class:" + implementation + " for web service");
+            } catch (Exception e) {
+                throw new RuntimeException("Unable to load the class: " + implementation + " for web service");
             }
-            ProxyServer proxy = new ProxyServer(proxyHost, proxyPortInt, proxyUser, proxyPassword);
-            confBuilder.setProxyServer(proxy);
         }
-        confBuilder.setFollowRedirects(true);
-        httpClient = new AsyncHttpClient(confBuilder.build());
     }
 
     /**
@@ -111,7 +101,8 @@ public class WS extends PlayPlugin {
      * @return a WSRequest on which you can add params, file headers using a chaining style programming.
      */
     public static WSRequest url(String url) {
-        return new WSRequest(url);
+        init();
+        return wsImpl.newRequest(url);
     }
 
     /**
@@ -127,22 +118,35 @@ public class WS extends PlayPlugin {
         for (int i = 0; i < params.length; i++) {
             encodedParams[i] = encode(params[i]);
         }
-        return new WSRequest(String.format(url, encodedParams));
+        return url(String.format(url, encodedParams));
     }
 
-    public static class WSRequest {
+    public interface WSImpl {
+        public WSRequest newRequest(String url);
+        public void stop();
+    }
 
+    public static abstract class WSRequest {
         public String url;
         public String username;
         public String password;
-        public String body;
+        public Object body;
         public FileParam[] fileParams;
         public Map<String, String> headers = new HashMap<String, String>();
         public Map<String, Object> parameters = new HashMap<String, Object>();
         public String mimeType;
-        public Integer timeout;
+        public boolean followRedirects = true;
+        /**
+         * timeout: value in seconds
+         */
+        public Integer timeout = 60;
 
-        private WSRequest(String url) {
+        public ServiceInfo oauthInfo = null;
+        public TokenPair oauthTokens = null;
+
+        public WSRequest() {}
+
+        public WSRequest(String url) {
             this.url = url;
         }
 
@@ -161,10 +165,41 @@ public class WS extends PlayPlugin {
          * provided credentials will be used during the request
          * @param username
          * @param password
+         * @return the WSRequest for chaining.
          */
         public WSRequest authenticate(String username, String password) {
             this.username = username;
             this.password = password;
+            return this;
+        }
+
+        /**
+         * Sign the request for do a call to a server protected by oauth
+         * @return the WSRequest for chaining.
+         */
+        public WSRequest oauth(ServiceInfo oauthInfo, TokenPair oauthTokens) {
+            this.oauthInfo = oauthInfo;
+            this.oauthTokens = oauthTokens;
+            return this;
+        }
+
+        /**
+         * Indicate if the WS should continue when hitting a 301 or 302
+         * @return the WSRequest for chaining.
+         */
+        public WSRequest followRedirects(boolean value) {
+            this.followRedirects = value;
+            return this;
+        }
+
+        /**
+         * Set the value of the request timeout, i.e. the number of seconds before cutting the
+         * connection - default to 60 seconds
+         * @param timeout the timeout value, e.g. "30s", "1min"
+         * @return the WSRequest for chaining
+         */
+        public WSRequest timeout(String timeout) {
+            this.timeout = Time.parseDuration(timeout);
             return this;
         }
 
@@ -194,7 +229,7 @@ public class WS extends PlayPlugin {
          * @return the WSRequest for chaining.
          */
         public WSRequest body(Object body) {
-            this.body = body == null ? "" : body.toString();
+            this.body = body;
             return this;
         }
 
@@ -258,172 +293,62 @@ public class WS extends PlayPlugin {
         }
 
         /** Execute a GET request synchronously. */
-        public HttpResponse get() {
-            try {
-                return new HttpResponse(prepare(httpClient.prepareGet(url)).execute().get());
-            } catch (Exception e) {
-                Logger.error(e.toString());
-                throw new RuntimeException(e);
-            }
-        }
+        public abstract HttpResponse get();
 
         /** Execute a GET request asynchronously. */
-        public Future<HttpResponse> getAsync() {
-            return execute(httpClient.prepareGet(url));
+        public Promise<HttpResponse> getAsync() {
+            throw new NotImplementedException();
         }
 
         /** Execute a POST request.*/
-        public HttpResponse post() {
-            try {
-                return new HttpResponse(prepare(httpClient.preparePost(url)).execute().get());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        public abstract HttpResponse post();
 
         /** Execute a POST request asynchronously.*/
-        public Future<HttpResponse> postAsync() {
-            return execute(httpClient.preparePost(url));
+        public Promise<HttpResponse> postAsync() {
+            throw new NotImplementedException();
         }
 
         /** Execute a PUT request.*/
-        public HttpResponse put() {
-            try {
-                return new HttpResponse(prepare(httpClient.preparePut(url)).execute().get());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        public abstract HttpResponse put();
 
         /** Execute a PUT request asynchronously.*/
-        public Future<HttpResponse> putAsync() {
-            return execute(httpClient.preparePut(url));
+        public Promise<HttpResponse> putAsync() {
+            throw new NotImplementedException();
         }
 
         /** Execute a DELETE request.*/
-        public HttpResponse delete() {
-            try {
-                return new HttpResponse(prepare(httpClient.prepareDelete(url)).execute().get());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        public abstract HttpResponse delete();
 
         /** Execute a DELETE request asynchronously.*/
-        public Future<HttpResponse> deleteAsync() {
-            return execute(httpClient.prepareDelete(url));
+        public Promise<HttpResponse> deleteAsync() {
+            throw new NotImplementedException();
         }
 
         /** Execute a OPTIONS request.*/
-        public HttpResponse options() {
-            try {
-                return new HttpResponse(prepare(httpClient.prepareOptions(url)).execute().get());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        public abstract HttpResponse options();
 
         /** Execute a OPTIONS request asynchronously.*/
-        public Future<HttpResponse> optionsAsync() {
-            return execute(httpClient.prepareOptions(url));
+        public Promise<HttpResponse> optionsAsync() {
+            throw new NotImplementedException();
         }
 
         /** Execute a HEAD request.*/
-        public HttpResponse head() {
-            try {
-                return new HttpResponse(prepare(httpClient.prepareHead(url)).execute().get());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        public abstract HttpResponse head();
 
         /** Execute a HEAD request asynchronously.*/
-        public Future<HttpResponse> headAsync() {
-            return execute(httpClient.prepareHead(url));
+        public Promise<HttpResponse> headAsync() {
+            throw new NotImplementedException();
         }
 
         /** Execute a TRACE request.*/
-        public HttpResponse trace() {
-            try {
-                return new HttpResponse(prepare(httpClient.prepareTrace(url)).execute().get());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        public abstract HttpResponse trace();
 
         /** Execute a TRACE request asynchronously.*/
-        public Future<HttpResponse> traceAsync() {
-            return execute(httpClient.prepareTrace(url));
+        public Promise<HttpResponse> traceAsync() {
+            throw new NotImplementedException();
         }
 
-        private BoundRequestBuilder prepare(BoundRequestBuilder builder) {
-            checkFileBody(builder);
-            if (this.username != null && this.password != null) {
-                this.headers.put("Authorization", "Basic " + Codec.encodeBASE64(this.username + ":" + this.password));
-            }
-            for (String key: this.headers.keySet()) {
-                builder.addHeader(key, headers.get(key));
-            }
-            return builder;
-        }
-
-        private Future<HttpResponse> execute(BoundRequestBuilder builder) {
-            try {
-                return prepare(builder).execute(new AsyncCompletionHandler<HttpResponse>() {
-                    @Override
-                    public HttpResponse onCompleted(Response response) throws Exception {
-                        return new HttpResponse(response);
-                    }
-                    @Override
-                    public void onThrowable(Throwable t) {
-                        throw new RuntimeException(t);
-                    }
-                });
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private void checkFileBody(BoundRequestBuilder builder) {
-            if (this.fileParams != null) {
-                //could be optimized, we know the size of this array.
-                for (int i = 0; i < this.fileParams.length; i++) {
-                    builder.addBodyPart(new FilePart(this.fileParams[i].paramName,
-                            this.fileParams[i].file,
-                            MimeTypes.getMimeType(this.fileParams[i].file.getName()),
-                            null));
-                }
-                if (this.parameters != null) {
-                    for (String key : this.parameters.keySet()) {
-                        Object value = this.parameters.get(key);
-                        if (value instanceof Collection<?> || value.getClass().isArray()) {
-                            Collection<?> values = value.getClass().isArray() ? Arrays.asList((Object[]) value) : (Collection<?>) value;
-                            for (Object v : values) {
-                                builder.addBodyPart(new StringPart(key, v.toString()));
-                            }
-                        } else {
-                            builder.addBodyPart(new StringPart(key, value.toString()));
-                        }
-                    }
-                }
-                return;
-            }
-            if (this.parameters != null && !this.parameters.isEmpty()) {
-                builder.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                builder.setBody(createQueryString());
-            }
-            if (this.body != null) {
-                if (this.parameters != null && !this.parameters.isEmpty()) {
-                    throw new RuntimeException("POST or PUT method with parameters AND body are not supported.");
-                }
-                builder.setBody(this.body);
-                if(this.mimeType != null) {
-                    builder.setHeader("Content-Type", this.mimeType);
-                }
-            }
-        }
-
-        private String createQueryString() {
+        protected String createQueryString() {
             StringBuilder sb = new StringBuilder();
             for (String key : this.parameters.keySet()) {
                 if (sb.length() > 0) {
@@ -450,11 +375,11 @@ public class WS extends PlayPlugin {
             return sb.toString();
         }
 
-    }
+    };
 
     public static class FileParam {
-        File file;
-        String paramName;
+        public File file;
+        public String paramName;
 
         public FileParam(File file, String name) {
             this.file = file;
@@ -473,25 +398,13 @@ public class WS extends PlayPlugin {
     /**
      * An HTTP response wrapper
      */
-    public static class HttpResponse {
-
-        private Response response;
-
-        /**
-         * you shouldnt have to create an HttpResponse yourself
-         * @param method
-         */
-        public HttpResponse(Response response) {
-            this.response = response;
-        }
+    public static abstract class HttpResponse {
 
         /**
          * the HTTP status code
          * @return the status code of the http response
          */
-        public Integer getStatus() {
-            return this.response.getStatusCode();
-        }
+        public abstract Integer getStatus();
 
         /**
          * The http response content type
@@ -501,20 +414,9 @@ public class WS extends PlayPlugin {
             return getHeader("content-type");
         }
 
-        public String getHeader(String key) {
-            return response.getHeader(key);
-        }
+        public abstract String getHeader(String key);
 
-        public List<Header> getHeaders() {
-            Headers hdrs = response.getHeaders();
-            List<Header> result = new ArrayList<Header>();
-            Iterator<Entry<String, List<String>>> iter = hdrs.iterator();
-            while (iter.hasNext()) {
-                Entry<String, List<String>> header = iter.next();
-                result.add(new Header(header.getKey(), header.getValue()));
-            }
-            return result;
-        }
+        public abstract List<Header> getHeaders();
 
         /**
          * Parse and get the response body as a {@link Document DOM document}
@@ -531,7 +433,7 @@ public class WS extends PlayPlugin {
          */
         public Document getXml(String encoding) {
             try {
-                InputSource source = new InputSource(response.getResponseBodyAsStream());
+                InputSource source = new InputSource(getStream());
                 source.setEncoding(encoding);
                 DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
                 builder.setEntityResolver(new NoOpEntityResolver());
@@ -546,38 +448,44 @@ public class WS extends PlayPlugin {
          * @return the body of the http response
          */
         public String getString() {
-            try {
-                return response.getResponseBody();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            return IO.readContentAsString(getStream());
+        }
+
+        /**
+         * Parse the response string as a query string.
+         * @return The parameters as a Map. Return an empty map if the response
+         * is not formed as a query string.
+         */
+        public Map<String, String> getQueryString() {
+            Map<String, String> result = new HashMap<String, String>();
+            String body = getString();
+            for (String entry: body.split("&")) {
+                if (entry.indexOf("=") > 0) {
+                    result.put(entry.split("=")[0], entry.split("=")[1]);
+                }
             }
+            return result;
         }
 
         /**
          * get the response as a stream
          * @return an inputstream
          */
-        public InputStream getStream() {
-            try {
-                return response.getResponseBodyAsStream();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        public abstract InputStream getStream();
 
         /**
          * get the response body as a {@link com.google.gson.JSONObject}
          * @return the json response
          */
         public JsonElement getJson() {
-            String json = "";
+            String json = getString();
             try {
-                json = response.getResponseBody();
                 return new JsonParser().parse(json);
             } catch (Exception e) {
                 Logger.error("Bad JSON: \n%s", json);
                 throw new RuntimeException("Cannot parse JSON (check logs)", e);
             }
         }
+
     }
 }

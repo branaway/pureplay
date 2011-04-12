@@ -21,6 +21,9 @@ PurePlay is based off the Play! 1.1 bazaar repository and is synchronized with i
 
 History:
 
+2011.4.10, 1.1.10
+    added check for "staticRouter.enabled" in the application.conf. set it to "true"/"yes" to enable the static routing code generation.
+
 2010.10.2, version 1.2alpha
 
 - experiment implementation of Fast Play, a statically routed HTTP processing.

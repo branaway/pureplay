@@ -16,7 +16,7 @@ import play.Invoker;
 import play.Play;
 import play.Play.Mode;
 import play.mvc.Http.Request;
-import play.server.NettyInvocation;
+import play.server.NettyInvocationDirect;
 
 /**
  * The object keeps a map with the topic string as the key and a list of session
@@ -133,7 +133,7 @@ public class Subscriptions {
 	 * @param sessionId
 	 *            kind of token id, not really the web session id
 	 */
-	public void subscribe(final String topic, final String sid, NettyInvocation invoke) {
+	public void subscribe(final String topic, final String sid,NettyInvocationDirect invoke) {
 		SessionInfo si = getSessionInfo(sid);
 		si.addInterest(topic);
 		ConcurrentSkipListSet<SessionInfo> subs = getTopicSubs(topic);
@@ -147,12 +147,12 @@ public class Subscriptions {
 	 * @param sid
 	 * @param invoke
 	 */
-	protected void checkMessages(final SessionInfo si, NettyInvocation invoke) {
+	protected void checkMessages(final SessionInfo si,NettyInvocationDirect invoke) {
 		si.checkin(invoke);
 		checkMsgExecutor.submit(new CheckMail(si));
 	}
 
-	public void checkMessages(String sid, NettyInvocation invoke) {
+	public void checkMessages(String sid, NettyInvocationDirect invoke) {
 		checkMessages(getSessionInfo(sid), invoke);
 	}
 	
@@ -169,7 +169,7 @@ public class Subscriptions {
 			if (inbox.isEmpty()) {
 				return;
 			} else {
-				NettyInvocation inv = sess.checkout();
+				NettyInvocationDirect inv = sess.checkout();
 				if (inv != null) {
 					// if the client has disconnected
 					if (!inv.getCtx().getChannel().isConnected()) {
@@ -203,7 +203,7 @@ public class Subscriptions {
 		sessionStore.remove(sessionId);
 	}
 
-//	private void checkin(String sessionId, NettyInvocation invoke) {
+//	private void checkin(String sessionId,StaticActionNettyInvocation invoke) {
 //		SessionInfo ih = getSessionInfo(sessionId);
 //		ih.checkin(invoke);
 //	}
@@ -246,7 +246,7 @@ public class Subscriptions {
 				
 				for (SessionInfo si : sis) {
 					// get any previous messages
-					NettyInvocation inv = si.checkout();
+					NettyInvocationDirect inv = si.checkout();
 					if (inv != null) {
 						// if the client has disconnected
 						if (!inv.getCtx().getChannel().isConnected()) {

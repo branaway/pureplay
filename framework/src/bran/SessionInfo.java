@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import play.server.NettyInvocation;
+import play.server.NettyInvocationDirect;
 
 /**
  * 
@@ -18,15 +18,15 @@ public class SessionInfo implements Comparable<SessionInfo>{
 	long lastCheckinTime;
 	Set<String> topics = new HashSet<String>();
 	// set this to null once the current invocation checks out.
-	NettyInvocation invocation;
+	NettyInvocationDirect invocation;
 	BlockingQueue<Message> inbox = new LinkedBlockingQueue<Message>();
 	
 	public SessionInfo(String sessionId) {
 		this.sessionId = sessionId;
 	}
 
-	public synchronized NettyInvocation checkout() {
-		NettyInvocation result = invocation;
+	public synchronized NettyInvocationDirect checkout() {
+		NettyInvocationDirect result = invocation;
 		invocation = null;
 		return result;
 	}
@@ -46,7 +46,7 @@ public class SessionInfo implements Comparable<SessionInfo>{
 		topics.add(topic);
 	}
 
-	public void checkin(NettyInvocation invoke) {
+	public void checkin(NettyInvocationDirect invoke) {
 		this.lastCheckinTime = System.currentTimeMillis();
 		this.invocation = invoke;
 	}

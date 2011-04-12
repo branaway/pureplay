@@ -59,6 +59,7 @@ import org.jboss.netty.handler.ssl.SslHandler;
 import org.jboss.netty.handler.stream.ChunkedFile;
 import org.jboss.netty.handler.stream.ChunkedStream;
 
+import play.Invocation;
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
@@ -108,14 +109,22 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 				} else {
 //					Invoker.invoke(new NettyInvocation(request, response, ctx, nettyRequest, e));
 					// direct invocation is faster, but suspend won't work.
-					NettyInvocation nettyInvocation = new NettyInvocation(request, response, ctx, nettyRequest, e);
+					String enableStaticRouting = Play.configuration.getProperty("staticRouter.enabled", "false");
+					
+					Invocation invocation = null;
+					if ("false".equals(enableStaticRouting) || "no".equals(enableStaticRouting)) {
+						invocation = new NettyInvocationClassic(request, response, ctx, nettyRequest, e);
+					}
+					else {
+						invocation = new NettyInvocationDirect(request, response, ctx, nettyRequest, e);
+					}
 					// bran hack to implement two phase change detection
 					try {
-						nettyInvocation.run();
+						invocation.run();
 					}
 					catch (RestartException re) {
 						Play.start();
-						nettyInvocation.run();
+						invocation.run();
 					}
 				}
 

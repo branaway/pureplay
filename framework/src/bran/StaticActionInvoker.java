@@ -19,7 +19,8 @@ import play.mvc.Router;
 import play.mvc.Scope;
 import play.mvc.Scope.Params;
 import play.mvc.results.Result;
-import play.server.NettyInvocation;
+import play.server.NettyInvocationClassic;
+import play.server.NettyInvocationDirect;
 
 /**
  * In contrast to {@link ActionInvoker}, concrete instance of this interface is
@@ -38,7 +39,7 @@ public abstract class StaticActionInvoker {
 		defaultRoute.compute();
 	}
 
-	public Result invoke(NettyInvocation invoke, Request req, Response res) {
+	public Result invoke(NettyInvocationDirect invoke, Request req, Response res) {
 		Http.Request.current.set(req);
 		Http.Response.current.set(res);
 
@@ -58,7 +59,7 @@ public abstract class StaticActionInvoker {
 		}
 	}
 
-	protected abstract Result dispatch(NettyInvocation invoke, Request req, Response res);
+	protected abstract Result dispatch(NettyInvocationDirect invoke, Request req, Response res);
 
 	// protected abstract Result catchAll(NettyInvocation invoke, Request req,
 	// Response res);

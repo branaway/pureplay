@@ -142,6 +142,11 @@ public class StaticRouterPlugin extends PlayPlugin {
 	}
 
 	public static void rebuild() {
+		String enableStaticRouting = Play.configuration.getProperty("staticRouter.enabled", "false");
+		if ("false".equals(enableStaticRouting) || "no".equals(enableStaticRouting)) {
+			return;
+		}
+		
 		if (!staticRoutingDir.exists()) {
 			if (!staticRoutingDir.mkdirs()) {
 				throw new RuntimeException("failed to mkdir: " + staticRoutingDir.getPath());
@@ -336,8 +341,8 @@ public class StaticRouterPlugin extends PlayPlugin {
 		+ "import java.util.Map;\n" 
 		+ "import " + StaticActionInvoker.class.getName() + ";\n" 
 			+ "import play.mvc.Http.Request;\n" + "import play.mvc.Http.Response;\n" + "import play.mvc.results.Result;\n"
-			+ "import play.server.NettyInvocation;\n" + "import bran.StaticActionInvoker;\n" + "\n" + "public class %s {\n"
-			+ "	public static Result dispatch(NettyInvocation invoke, Request req, Response res) {\n"
+			+ "import play.server.NettyInvocationDirect;\n" + "import bran.StaticActionInvoker;\n" + "\n" + "public class %s {\n"
+			+ "	public static Result dispatch(NettyInvocationDirect invoke, Request req, Response res) {\n"
 			+ "		Map<String, String> matches = StaticActionInvoker.getMatches(%s, req);\n" + "		if (matches != null) {\n"
 			+ "			String actionMethod = req.actionMethod;\n" + "			String controllerName = req.controller;\n" + "			\n"
 			+ "			if (false) {}\n" + "			// generated part\n" + "			%s  \n" + "			////\n" + "		}\n" + "		return null;\n" + "	}\n" + "\n"
@@ -425,10 +430,10 @@ public class StaticRouterPlugin extends PlayPlugin {
 	}
 
 	static final String DISPATCHER_TEMPLATE = "package staticRouting;\n" + "\n" + "import play.mvc.Http.Request;\n"
-			+ "import play.mvc.Http.Response;\n" + "import play.mvc.results.Result;\n" + "import play.server.NettyInvocation;\n"
+			+ "import play.mvc.Http.Response;\n" + "import play.mvc.results.Result;\n" + "import play.server.NettyInvocationDirect;\n"
 			+ "import " + bran.StaticActionInvoker.class.getName() + ";\n" + "\n"
 			+ "public class Dispatcher extends StaticActionInvoker {\n" + "	public final long version%s = 1; \n"
-			+ "	protected Result dispatch(NettyInvocation invoke, Request req, Response res) {\n" + "		Result r = null;\r\n"
+			+ "	protected Result dispatch(NettyInvocationDirect invoke, Request req, Response res) {\n" + "		Result r = null;\r\n"
 			+ "		if (false) {}\r\n" + "		// real work\n" + "		%s\n" // insertion
 			// point
 			+ " 		return null;\n" + "	}\n" + "\n"
